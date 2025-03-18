@@ -24,7 +24,7 @@ import (
 )
 
 var role_templates = map[string]string{
-	"translator": "Please translate the following text to Chinese",
+	"translator": "Please translate the following text to Chinese.",
 }
 
 type Config struct {
@@ -112,12 +112,10 @@ func main() {
 		c.FileFromFS("/", http.FS(dist))
 	})
 
-
 	router.GET("/translate", handleTranslate)
 
 	// Prometheus metrics
 	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
-
 
 	log.Printf("Server starting on port %s", cfg.ServerPort)
 	if err := router.Run(":" + cfg.ServerPort); err != nil {
@@ -150,6 +148,7 @@ func handleTranslate(c *gin.Context) {
 	if context != "" {
 		translationType = "context"
 	}
+
 	translationCounter.WithLabelValues(translationType).Inc()
 
 	// Check cache first
