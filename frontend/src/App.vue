@@ -40,7 +40,6 @@ const isLoading = ref(false)
 const translation = ref('')
 const params = new URLSearchParams(window.location.search);
 const q = params.get('q');
-// const text = ref(q)
 const inputText = ref(q)
 
 const renderedTranslation = computed(() => {
@@ -86,6 +85,12 @@ async function translateSelected() {
 function copyMarkdown() {
   navigator.clipboard.writeText(translation.value)
 }
+
+// Run translation if query parameter exists
+if (q) {
+  translateFull()
+}
+
 </script>
 
 <style scoped>
