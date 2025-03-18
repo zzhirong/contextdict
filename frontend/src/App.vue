@@ -1,17 +1,14 @@
 <template>
   <div class="app">
-    <header>
-      <h1>Context Dictionary</h1>
-    </header>
     <main>
       <div class="translation-container">
         <div class="input-section">
           <textarea
             v-model="inputText"
-            placeholder="Enter text to translate..."
             @select="handleTextSelection"
             @input="clearSelection"
-          ></textarea>
+          >
+          </textarea>
           <div v-if="selectedText" class="selection-info">
             Selected: {{ selectedText }}
             <button @click="translateSelected" :disabled="isLoading">
@@ -38,10 +35,13 @@ import { ref, computed } from 'vue'
 import { marked } from 'marked'
 import axios from 'axios'
 
-const inputText = ref('')
 const selectedText = ref('')
 const isLoading = ref(false)
 const translation = ref('')
+const params = new URLSearchParams(window.location.search);
+const q = params.get('q');
+// const text = ref(q)
+const inputText = ref(q)
 
 const renderedTranslation = computed(() => {
   return marked(translation.value)
@@ -61,7 +61,7 @@ function clearSelection() {
 async function translateFull() {
   try {
     isLoading.value = true
-    const response = await axios.get(`/translate?q=${encodeURIComponent(inputText.value)}`)
+    const response = await axios.get(`/translate?q=${encodeURIComponent(inputText.value??"")}`)
     translation.value = response.data.translation
   } catch (error) {
     console.error('Translation failed:', error)
@@ -74,7 +74,7 @@ async function translateSelected() {
   try {
     isLoading.value = true
     const response = await axios.get(
-      `/translate?q=${encodeURIComponent(selectedText.value)}&context=${encodeURIComponent(inputText.value)}`
+      `/translate?q=${encodeURIComponent(selectedText.value)}&context=${encodeURIComponent(inputText.value??"")}`
     )
     translation.value = response.data.translation
   } catch (error) {

@@ -1,2 +1,2 @@
 ./dist/index.html: ./src/App.vue
-	pnpm run build
+	pnpm install && pnpm run build
