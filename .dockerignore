@@ -1,0 +1,9 @@
+/ContextDict
+/frontend/dist/
+/frontend/node_modules/
+/frontend/pnpm-lock.yaml
+
+.DS_Store
+*.log
+.env
+translations.db

@@ -15,7 +15,7 @@ ARG APP_NAME
 COPY . ./
 COPY --from=frontend-builder /frontend/dist ./frontend/dist
 RUN go mod download
-RUN go build -o ${APP_NAME}
+RUN CGO_ENABLED=1 go build -o ${APP_NAME}
 
 FROM alpine:latest
 ARG APP_NAME
