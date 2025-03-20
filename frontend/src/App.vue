@@ -5,19 +5,22 @@
         <div class="input-section">
           <textarea
             v-model="inputText"
-            @select="handleTextSelection"
+            @mouseup="translateSelected"
+            @keyup="translateSelected"
             @input="clearSelection"
           >
           </textarea>
-          <div v-if="selectedText" class="selection-info">
-            Selected: {{ selectedText }}
-            <button @click="translateSelected" :disabled="isLoading">
-              {{ isLoading ? 'Translating...' : 'Translate Selected' }}
+          <div class="button-group">
+            <button @click="translateFull" :disabled="isLoading">
+              {{ isLoading ? 'thinking...' : 'Translate' }}
+            </button>
+            <button @click="format" :disabled="isLoading">
+              {{ isLoading ? 'thinking...' : 'Format' }}
+            </button>
+            <button @click="summarize" :disabled="isLoading">
+              {{ isLoading ? 'thinking...' : 'Summarize' }}
             </button>
           </div>
-          <button v-else @click="translateFull" :disabled="isLoading">
-            {{ isLoading ? 'Translating...' : 'Translate' }}
-          </button>
         </div>
         <div v-if="translation" class="translation-result">
           <div class="markdown-content" v-html="renderedTranslation"></div>
@@ -39,17 +42,17 @@ const selectedText = ref('')
 const isLoading = ref(false)
 const translation = ref('')
 const params = new URLSearchParams(window.location.search);
-const q = params.get('q');
+const q = params.get('keyword');
 const inputText = ref(q)
-
+const prompt = ref('')
 const renderedTranslation = computed(() => {
   return marked(translation.value)
 })
 
 function handleTextSelection() {
-  const selection = window.getSelection()
-  if (selection) {
-    selectedText.value = selection.toString()
+  const selection = window.getSelection()?.toString()
+  if (selection != "") {
+    prompt.value = `请在上述语境中帮我理解“${selection}”`
   }
 }
 
@@ -60,8 +63,8 @@ function clearSelection() {
 async function translateFull() {
   try {
     isLoading.value = true
-    const response = await axios.get(`/translate?q=${encodeURIComponent(inputText.value??"")}`)
-    translation.value = response.data.translation
+    const response = await axios.get(`/translate?keyword=${encodeURIComponent(inputText.value??"")}`)
+    translation.value = response.data.result
   } catch (error) {
     console.error('Translation failed:', error)
   }
@@ -69,15 +72,42 @@ async function translateFull() {
 }
 
 async function translateSelected() {
-  if (!selectedText.value) return
+  const selection = window.getSelection()?.toString()??""
+  if (selection == "") return
   try {
     isLoading.value = true
     const response = await axios.get(
-      `/translate?q=${encodeURIComponent(selectedText.value)}&context=${encodeURIComponent(inputText.value??"")}`
+      `/translate?keyword=${encodeURIComponent(selection)}&context=${encodeURIComponent(inputText.value??"")}`
     )
-    translation.value = response.data.translation
+    translation.value = response.data.result
   } catch (error) {
     console.error('Translation failed:', error)
+  }
+  isLoading.value = false
+}
+
+async function format() {
+  try {
+    isLoading.value = true
+    const response = await axios.get(
+      `/format?keyword=${encodeURIComponent(inputText.value??"")}`
+    )
+    translation.value = response.data.result
+  } catch (error) {
+    console.error('Failed to format', error)
+  }
+  isLoading.value = false
+}
+
+async function summarize() {
+  try {
+    isLoading.value = true
+    const response = await axios.get(
+      `/summarize?keyword=${encodeURIComponent(inputText.value??"")}`
+    )
+    translation.value = response.data.result
+  } catch (error) {
+    console.error('Faield to summerize', error)
   }
   isLoading.value = false
 }
@@ -158,5 +188,11 @@ button:hover {
 button:disabled {
   background-color: #cccccc;
   cursor: not-allowed;
+}
+
+.button-group {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-start;
 }
 </style>
