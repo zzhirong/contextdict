@@ -5,14 +5,16 @@
         <div class="input-section">
           <textarea
             v-model="inputText"
-            @mouseup="translateSelected"
-            @keyup="translateSelected"
+            @mouseup="updateSelection"
             @input="clearSelection"
           >
           </textarea>
           <div class="button-group">
-            <button @click="translateFull" :disabled="isLoading">
-              {{ isLoading ? 'thinking...' : 'Translate' }}
+            <button @click="translate" :disabled="isLoading">
+            {{ isLoading ?
+                  'thinking...' : 
+                  (selectedText ? 'TranslateSelected' : 'Translate')
+            }}
             </button>
             <button @click="format" :disabled="isLoading">
               {{ isLoading ? 'thinking...' : 'Format' }}
@@ -44,41 +46,30 @@ const translation = ref('')
 const params = new URLSearchParams(window.location.search);
 const q = params.get('keyword');
 const inputText = ref(q)
-const prompt = ref('')
 const renderedTranslation = computed(() => {
   return marked(translation.value)
 })
-
-function handleTextSelection() {
-  const selection = window.getSelection()?.toString()
-  if (selection != "") {
-    prompt.value = `请在上述语境中帮我理解“${selection}”`
-  }
-}
 
 function clearSelection() {
   selectedText.value = ''
 }
 
-async function translateFull() {
-  try {
-    isLoading.value = true
-    const response = await axios.get(`translate?keyword=${encodeURIComponent(inputText.value??"")}`)
-    translation.value = response.data.result
-  } catch (error) {
-    console.error('Translation failed:', error)
-  }
-  isLoading.value = false
+function updateSelection() {
+  const selection = window.getSelection()?.toString().trim() || ''
+  if (selection) selectedText.value = selection
 }
 
-async function translateSelected() {
-  const selection = window.getSelection()?.toString()??""
-  if (selection == "") return
+async function translate() {
+  const context = inputText.value ?? ""
+  if(context == "") return
+  let query = `translate?keyword=${encodeURIComponent(context)}`
+  if (selectedText.value != ""){
+     query = `translate?keyword=${encodeURIComponent(selectedText.value)}` +
+      `&context=${encodeURIComponent(context)}`
+  }
+  isLoading.value = true
   try {
-    isLoading.value = true
-    const response = await axios.get(
-      `translate?keyword=${encodeURIComponent(selection)}&context=${encodeURIComponent(inputText.value??"")}`
-    )
+    const response = await axios.get(query)
     translation.value = response.data.result
   } catch (error) {
     console.error('Translation failed:', error)
@@ -118,7 +109,7 @@ function copyMarkdown() {
 
 // Run translation if query parameter exists
 if (q) {
-  translateFull()
+  translate()
 }
 
 </script>
@@ -178,7 +169,6 @@ button:hover {
 .translation-result {
   border: 1px solid #ccc;
   border-radius: 4px;
-  padding: 1rem;
   margin-top: 1rem;
 }
 
