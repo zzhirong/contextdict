@@ -63,7 +63,7 @@ function clearSelection() {
 async function translateFull() {
   try {
     isLoading.value = true
-    const response = await axios.get(`/translate?keyword=${encodeURIComponent(inputText.value??"")}`)
+    const response = await axios.get(`translate?keyword=${encodeURIComponent(inputText.value??"")}`)
     translation.value = response.data.result
   } catch (error) {
     console.error('Translation failed:', error)
@@ -77,7 +77,7 @@ async function translateSelected() {
   try {
     isLoading.value = true
     const response = await axios.get(
-      `/translate?keyword=${encodeURIComponent(selection)}&context=${encodeURIComponent(inputText.value??"")}`
+      `translate?keyword=${encodeURIComponent(selection)}&context=${encodeURIComponent(inputText.value??"")}`
     )
     translation.value = response.data.result
   } catch (error) {
@@ -90,7 +90,7 @@ async function format() {
   try {
     isLoading.value = true
     const response = await axios.get(
-      `/format?keyword=${encodeURIComponent(inputText.value??"")}`
+      `format?keyword=${encodeURIComponent(inputText.value??"")}`
     )
     translation.value = response.data.result
   } catch (error) {
@@ -103,7 +103,7 @@ async function summarize() {
   try {
     isLoading.value = true
     const response = await axios.get(
-      `/summarize?keyword=${encodeURIComponent(inputText.value??"")}`
+      `summarize?keyword=${encodeURIComponent(inputText.value??"")}`
     )
     translation.value = response.data.result
   } catch (error) {
