@@ -1,12 +1,12 @@
 GO_SRCS := $(wildcard *.go config/*.go)
 
-.PHONY: front ContextDict
+.PHONY: front contextdict
 
-run: front ContextDict
-	./ContextDict
-
-ContextDict: $(GO_SRCS)
+contextdict: $(GO_SRCS) front
 	go build .
 
 front:
 	$(MAKE) -C ./frontend
+
+run: contextdict
+	./contextdict

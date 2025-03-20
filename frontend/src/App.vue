@@ -118,7 +118,6 @@ if (q) {
 .app {
   max-width: 800px;
   margin: 0 auto;
-  padding: 2rem;
 }
 
 header {
@@ -129,7 +128,6 @@ header {
 .translation-container {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
 }
 
 .input-section {
@@ -140,8 +138,8 @@ header {
 
 textarea {
   width: 100%;
+  padding: 0.5rem;
   min-height: 150px;
-  padding: 1rem;
   border: 1px solid #ccc;
   border-radius: 4px;
   resize: vertical;
