@@ -51,9 +51,8 @@ func initConfig() *Config {
 		}
 	}
 	if os.Getenv("DS_MODEL") != "" {
-	    config.DSApiKey = os.Getenv("DS_MODEL")
+	    config.DSModel = os.Getenv("DS_MODEL")
 	}
-	fmt.Printf("API_KEY %s %s", config.DSApiKey, config.DSModel)
 	return &config
 }
 
