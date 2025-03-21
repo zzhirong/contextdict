@@ -50,7 +50,9 @@ func initConfig() *Config {
 			os.Exit(1)
 		}
 	}
-
+	if os.Getenv("DS_MODEL") != "" {
+	    config.DSApiKey = os.Getenv("DS_MODEL")
+	}
 	return &config
 }
 
@@ -155,9 +157,9 @@ func handleTranslate(c *gin.Context) {
 	var prompt string
 	// Call DeepSeek API with retries
 	if q.Context != "" {
-		prompt = fmt.Sprintf(`
-	Please help me to understand the {{ %s }} in the context of {{ %s }} in Chinese.
-	`, q.Keyword, q.Context)
+		prompt = fmt.Sprintf(
+		    "Please help me to understand the `%s` in the context of `%s` in Chinese.",
+		    q.Keyword, q.Context)
 	} else {
 		prompt = fmt.Sprintf(`
 	First you need to determin if the following text is a code snippet or a plain text.
