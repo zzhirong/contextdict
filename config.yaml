@@ -1,0 +1,26 @@
+ds_api_key: ${env.DS_API_KEY}
+ds_base_url: "https://ark.cn-beijing.volces.com/api/v3"
+ds_model: "ep-20250314123811-lt8tx"
+server_port: "8085"
+prompts:
+  translate: |
+    Please help me to understand the `%s` in the context of `%s` in Chinese.
+  format: |
+    Please analyze the input text. If it is plain text, translate it into Chinese.
+    If it is source code, simply format the code without translating it.
+    Provide only the final output without any additional explanation.
+
+    %s
+  summarize: |
+    I would like to have the content refined in its original language.
+
+    %s
+  translate_on_context: |
+    Please help me to understand the `%s` in the context of `%s` in Chinese.
+  translate_or_format: |
+    First you need to determin if the following text is a code snippet or a plain text.
+    If it is just plain text, Please translate it to Chinese.
+    If it is a code snippet, please just format the source code snippet without translation.
+    Just the result, no explanation.
+
+    %s

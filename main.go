@@ -6,55 +6,19 @@ import (
 	"io/fs"
 	"log"
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/zzhirong/contextdict/config"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 
 	"context"
-	"flag"
 
 	openai "github.com/sashabaranov/go-openai"
 )
-
-type Config struct {
-	DSApiKey   string
-	DSBaseURL  string
-	DSModel    string
-	ServerPort string
-}
-
-func initConfig() *Config {
-	var config Config
-
-	// Get API key from command line
-	flag.StringVar(&config.DSApiKey, "k", "", "DeepSeek API Key")
-	flag.StringVar(&config.DSBaseURL, "u", "https://ark.cn-beijing.volces.com/api/v3", "DeepSeek API Base URL")
-	// flag.StringVar(&config.DSModel, "m", "deepseek-chat", "DeepSeek Model")
-	flag.StringVar(&config.DSModel, "m", "deepseek-v3-241226", "DeepSeek Model")
-	flag.StringVar(&config.ServerPort, "p", "8085", "Server Port")
-	flag.Parse()
-
-	// Validate required fields
-	if config.DSApiKey == "" {
-		// if os.Getenv("DEEPSEEK_API_KEY") != "" {
-		if os.Getenv("V_API_KEY") != "" {
-			config.DSApiKey = os.Getenv("V_API_KEY")
-		}
-		if config.DSApiKey == "" {
-			fmt.Println("DeepSeek API Key is required. Use -k flag to provide it.")
-			os.Exit(1)
-		}
-	}
-	if os.Getenv("DS_MODEL") != "" {
-	    config.DSModel = os.Getenv("DS_MODEL")
-	}
-	return &config
-}
 
 //go:embed frontend/dist
 var distFS embed.FS
@@ -68,7 +32,7 @@ type TranslationResponse struct {
 
 var (
 	db                 *gorm.DB
-	cfg                = initConfig()
+	cfg                = config.Load()
 	translationCounter = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "translation_requests_total",
@@ -155,21 +119,13 @@ func handleTranslate(c *gin.Context) {
 	}
 
 	var prompt string
-	// Call DeepSeek API with retries
+	prompts := cfg.GetPrompts()
 	if q.Context != "" {
-		prompt = fmt.Sprintf(
-		    "Please help me to understand the `%s` in the context of `%s` in Chinese.",
-		    q.Keyword, q.Context)
+		prompt = fmt.Sprintf(prompts.TranslateOnContext, q.Keyword, q.Context)
 	} else {
-		prompt = fmt.Sprintf(`
-	First you need to determin if the following text is a code snippet or a plain text.
-	If it is just plain text, Please translate it to Chinese.
-	If it is a code snippet, please just format the source code snippet without translation.
-	Just the result, no explanation.
-
-	%s
-	`, q.Keyword)
+		prompt = fmt.Sprintf(prompts.TranslateOrFormat, q.Keyword)
 	}
+
 	q.Translation, err = makeDeepSeekRequest(prompt)
 	if err != nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Failed to translate text"})
@@ -183,13 +139,8 @@ func handleTranslate(c *gin.Context) {
 }
 
 func handleFormat(c *gin.Context) {
-	prompt := fmt.Sprintf(`
-    Please analyze the input text. If it is plain text, translate it into Chinese.
-    If it is source code, simply format the code without translating it.
-    Provide only the final output without any additional explanation.
-
-    %s
-    `, c.Query("keyword"))
+	prompts := cfg.GetPrompts()
+	prompt := fmt.Sprintf(prompts.Format, c.Query("keyword"))
 	translationCounter.WithLabelValues("format").Inc()
 	res, err := makeDeepSeekRequest(prompt)
 	if err != nil {
@@ -202,11 +153,8 @@ func handleFormat(c *gin.Context) {
 }
 
 func handleSummarize(c *gin.Context) {
-	prompt := fmt.Sprintf(`
-    I would like to have the content refined in its original language.
-
-    %s
-    `, c.Query("keyword"))
+	prompts := cfg.GetPrompts()
+	prompt := fmt.Sprintf(prompts.Summarize, c.Query("keyword"))
 	translationCounter.WithLabelValues("summarize").Inc()
 	res, err := makeDeepSeekRequest(prompt)
 	if err != nil {
@@ -216,10 +164,10 @@ func handleSummarize(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"result": res,
 	})
-	// 实现总结逻辑
 }
 
 func makeDeepSeekRequest(prompt string) (string, error) {
+	fmt.Println("prompt:", prompt)
 	config := openai.DefaultConfig(cfg.DSApiKey)
 	config.BaseURL = cfg.DSBaseURL
 
