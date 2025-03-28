@@ -1,0 +1,12 @@
+image:
+  repository: zzhirong/contextdict
+  tag: latest
+  pullPolicy: IfNotPresent
+
+config:
+  dsBaseUrl: "https://ark.cn-beijing.volces.com/api/v3"
+  dsModel: "ep-20250314123811-lt8tx"
+  serverPort: "8085"
+
+secrets:
+  dsApiKey: ""  # 将通过 --set-string secrets.dsApiKey=xxx 注入

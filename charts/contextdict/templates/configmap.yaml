@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-config
+data:
+  config.yaml: |
+    ds_base_url: {{ .Values.config.dsBaseUrl }}
+    ds_model: {{ .Values.config.dsModel }}
+    server_port: {{ .Values.config.serverPort }}

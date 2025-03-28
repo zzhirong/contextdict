@@ -3,10 +3,10 @@ name: Docker Build and Push on Tag
 on:
   push:
     tags:
-      - '*'  # 监听所有 tag 的创建
+      - '*'
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
@@ -34,3 +34,23 @@ jobs:
           tags: |
             zzhirong/contextdict:${{ github.ref_name }}
             zzhirong/contextdict:latest
+
+      - name: Install Helm
+        uses: azure/setup-helm@v3
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
+
+      - name: Configure K8s credentials
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBE_CONFIG }}" > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      - name: Deploy to K8s
+        run: |
+          helm upgrade --install contextdict ./charts/contextdict \
+            --set image.tag=${{ github.ref_name }} \
+            --set-string secrets.dsApiKey=${{ secrets.DS_API_KEY }}
