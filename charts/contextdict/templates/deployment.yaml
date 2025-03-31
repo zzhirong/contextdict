@@ -26,7 +26,8 @@ spec:
               key: ds_api_key
         volumeMounts:
         - name: config-volume
-          mountPath: /etc/contextdict
+          mountPath: /etc/config.yaml
+          subPath: config.yaml
       volumes:
         - name: config-volume
           configMap:
