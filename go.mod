@@ -7,6 +7,7 @@ require (
 	github.com/prometheus/client_golang v1.21.1
 	github.com/sashabaranov/go-openai v1.38.0
 	github.com/spf13/viper v1.20.1
+	golang.org/x/time v0.8.0
 	gorm.io/driver/sqlite v1.5.7
 	gorm.io/gorm v1.25.12
 )

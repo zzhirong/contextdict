@@ -21,7 +21,10 @@ import (
 
 	"context"
 
+	"sync"
+
 	openai "github.com/sashabaranov/go-openai"
+	"golang.org/x/time/rate"
 )
 
 //go:embed frontend/dist
@@ -44,6 +47,13 @@ var (
 		},
 		[]string{"type"},
 	)
+	translationCacheHitCounter = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "translation_cache_hits_total",
+			Help: "Total number of translation cache hits",
+		},
+		[]string{"type"},
+	)
 )
 
 func init() {
@@ -59,7 +69,7 @@ func init() {
 		log.Fatal("Failed to migrate database:", err)
 	}
 
-	prometheus.MustRegister(translationCounter)
+	prometheus.MustRegister(translationCounter, translationCacheHitCounter)
 }
 
 func checkKeyword(c *gin.Context) {
@@ -70,15 +80,75 @@ func checkKeyword(c *gin.Context) {
 		!strings.HasPrefix(path, "/metrics") &&
 		keyword == "" {
 
-		c.JSON(400, gin.H{"error": "Missing keyword parameter"})
+		c.JSON(400, gin.H{"error": "缺少参数 keyword"})
 		c.Abort()
 		return
 	}
 	c.Next()
 }
 
+const maxParamLength = 1024 // 1k 字符限制
+
+func checkParamLength(c *gin.Context) {
+	keyword := c.Query("keyword")
+	context := c.Query("context")
+
+	if len(keyword) > maxParamLength || len(context) > maxParamLength {
+		c.JSON(400, gin.H{"error": "参数长度超过限制"})
+		c.Abort()
+		return
+	}
+	c.Next()
+}
+
+// IP 限流器
+type IPRateLimiter struct {
+	ips   map[string]*rate.Limiter
+	mu    sync.RWMutex
+	rate  rate.Limit
+	burst int
+}
+
+func NewIPRateLimiter(r rate.Limit, b int) *IPRateLimiter {
+	return &IPRateLimiter{
+		ips:   make(map[string]*rate.Limiter),
+		rate:  r,
+		burst: b,
+	}
+}
+
+func (i *IPRateLimiter) getLimiter(ip string) *rate.Limiter {
+	i.mu.Lock()
+	defer i.mu.Unlock()
+
+	limiter, exists := i.ips[ip]
+	if !exists {
+		limiter = rate.NewLimiter(i.rate, i.burst)
+		i.ips[ip] = limiter
+	}
+
+	return limiter
+}
+
+func ipRateLimit(c *gin.Context) {
+	ip := c.ClientIP()
+	limiter := rateLimiter.getLimiter(ip)
+	if !limiter.Allow() {
+		c.JSON(429, gin.H{"error": "请求太频繁，请稍后再试"})
+		c.Abort()
+		return
+	}
+	c.Next()
+}
+
+var rateLimiter = NewIPRateLimiter(10, 10) // 每秒10次请求，突发最多10次
+
 func main() {
 	router := gin.Default()
+	router.Use(ipRateLimit) // 添加 IP 限流中间件
+	router.Use(checkKeyword)
+	router.Use(checkParamLength)
+
 	// Add middleware to check the parameter keyword on url paths beside /
 	router.Use(checkKeyword)
 	// Serve embedded static files
@@ -95,8 +165,16 @@ func main() {
 	router.GET("/format", handleFormat)
 	router.GET("/summarize", handleSummarize)
 
-	// Prometheus metrics
-	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
+	// Setup Prometheus metrics endpoint on port 8086
+	metricsServer := &http.Server{
+		Addr:    ":" + cfg.MetricServerPort,
+		Handler: promhttp.Handler(),
+	}
+	go func() {
+		if err := metricsServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Printf("metrics server error: %v\n", err)
+		}
+	}()
 
 	log.Printf("Server starting on port %s", cfg.ServerPort)
 	srv := &http.Server{
@@ -111,6 +189,11 @@ func main() {
 		}
 	}()
 
+	gracefulShutdown(srv, metricsServer)
+}
+
+// gracefulShutdown handles the graceful shutdown of HTTP servers
+func gracefulShutdown(srv *http.Server, metricsServer *http.Server) {
 	// Wait for interrupt signal to gracefully shutdown the server
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
@@ -122,6 +205,9 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	if err := srv.Shutdown(ctx); err != nil {
+		log.Fatal(err)
+	}
+	if err := metricsServer.Shutdown(ctx); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -140,6 +226,7 @@ func handleTranslate(c *gin.Context) {
 	// Check cache first
 	result := db.Where("keyword = ? AND context = ?", q.Keyword, q.Context).First(&q)
 	if result.Error == nil {
+		translationCacheHitCounter.WithLabelValues("translate").Inc()
 		c.JSON(200, gin.H{"result": q.Translation})
 		return
 	}

@@ -2,6 +2,7 @@ ds_api_key: ${env.DS_API_KEY}
 ds_base_url: "https://ark.cn-beijing.volces.com/api/v3"
 ds_model: "ep-20250314123811-lt8tx"
 server_port: "8085"
+metric_server_port: "8086"
 prompts:
   translate: |
     Please help me to understand the `%s` in the context of `%s` in Chinese.

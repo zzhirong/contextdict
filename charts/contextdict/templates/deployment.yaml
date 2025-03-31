@@ -41,5 +41,10 @@ spec:
     app: {{ .Release.Name }}
   ports:
     - protocol: TCP
-      port: {{ .Values.config.serverPort | default 8085 }}
-      targetPort: {{ .Values.config.serverPort | default 8085 }}
+      name: contextdict-port
+      port: {{ .Values.config.server_port | default 8085 }}
+      targetPort: {{ .Values.config.server_port | default 8085 }}
+    - protocol: TCP
+      name: contextdict-metric-port
+      port: {{ .Values.config.metric_server_port | default 8086 }}
+      targetPort: {{ .Values.config.metric_server_port | default 8086 }}

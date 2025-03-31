@@ -22,6 +22,7 @@ type Config struct {
 	DSBaseURL   string  `mapstructure:"ds_base_url"`
 	DSModel     string  `mapstructure:"ds_model"`
 	ServerPort  string  `mapstructure:"server_port"`
+	MetricServerPort  string  `mapstructure:"metric_server_port"`
 	Prompts     Prompts `mapstructure:"prompts"`
 }
 

@@ -4,6 +4,14 @@ metadata:
   name: {{ .Release.Name }}-config
 data:
   config.yaml: |
-    ds_base_url: {{ .Values.config.dsBaseUrl }}
-    ds_model: {{ .Values.config.dsModel }}
-    server_port: {{ .Values.config.serverPort }}
+    ds_api_key: {{.Values.config.ds_api_key }}
+    ds_base_url: {{ .Values.config.ds_base_url }}
+    ds_model: {{ .Values.config.ds_model }}
+    server_port: {{ .Values.config.server_port }}
+    metric_server_port: {{ .Values.config.metric_server_port }}
+    prompts:
+      translate: {{ .Values.config.prompts.translate | nindent 8 }}
+      format: {{ .Values.config.prompts.format | nindent 8 }}
+      summarize: {{ .Values.config.prompts.summarize | nindent 8 }}
+      translate_on_context: {{ .Values.config.prompts.translate_on_context | nindent 8 }}
+      translate_or_format: {{ .Values.config.prompts.translate_or_format | nindent 8 }}

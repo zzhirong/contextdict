@@ -5,6 +5,6 @@ if [ -z "$DS_API_KEY" ]; then
     exit 1
 fi
 
-helm upgrade --install contextdict ./charts/contextdict \
+helm upgrade --install contextdict ./contextdict \
     --set-string secrets.dsApiKey="$DS_API_KEY" \
     --set image.tag="latest"
