@@ -168,6 +168,10 @@ button:hover {
   border: 1px solid #ccc;
   border-radius: 4px;
   margin-top: 1rem;
+  width: 100%;
+  resize: vertical;
+  padding: 0.5rem;
+  resize: vertical;
 }
 
 .copy-button {

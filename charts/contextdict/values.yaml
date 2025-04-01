@@ -10,10 +10,11 @@ config:
   server_port: "8085"
   metric_server_port: "8086"
   database:
-    host: "postgresql"
-    port: "5432"
-    user: "postgres"
-    dbname: "contextdict"
+    host: "aws-0-ap-northeast-1.pooler.supabase.com"
+    port: "6543"
+    user: "postgres.hhcbjadlrkfdvezskqrb"
+    password: ""
+    dbname: "postgres"
     sslmode: "disable"
   prompts:
     translate: |

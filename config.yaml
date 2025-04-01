@@ -1,4 +1,4 @@
-ds_api_key: ${env.DS_API_KEY}
+ds_api_key: ""
 ds_base_url: "https://ark.cn-beijing.volces.com/api/v3"
 ds_model: "ep-20250314123811-lt8tx"
 server_port: "8085"
@@ -25,3 +25,10 @@ prompts:
     Just the result, no explanation.
 
     %s
+database:
+  host: "aws-0-ap-northeast-1.pooler.supabase.com"
+  port: "6543"
+  user: "postgres.hhcbjadlrkfdvezskqrb"
+  password: ""
+  dbname: "postgres"
+  sslmode: "require"

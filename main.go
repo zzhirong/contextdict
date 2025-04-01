@@ -12,11 +12,12 @@ import (
 	"syscall"
 	"time"
 
+
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/zzhirong/contextdict/config"
-	"gorm.io/driver/postgres"  // 替换 sqlite 导入
+	"gorm.io/driver/postgres" // 替换 sqlite 导入
 	"gorm.io/gorm"
 
 	"context"
@@ -66,15 +67,16 @@ func init() {
 		cfg.Database.DBName,
 		cfg.Database.SSLMode,
 	)
-	
-	db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+
+	db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
+		// Logger: logger.Default.LogMode(logger.Info), // 添加这行开启 SQL 日志
+	})
 	if err != nil {
 		log.Fatal("Failed to connect to database:", err)
 	}
 
-	err = db.AutoMigrate(&TranslationResponse{})
-	if err != nil {
-		log.Fatal("Failed to migrate database:", err)
+	if err = db.AutoMigrate(&TranslationResponse{}); err != nil {
+		log.Fatal("创建数据库表失败:", err)
 	}
 
 	prometheus.MustRegister(translationCounter, translationCacheHitCounter)
@@ -235,6 +237,7 @@ func handleTranslate(c *gin.Context) {
 	// Check cache first
 	result := db.Where("keyword = ? AND context = ?", q.Keyword, q.Context).First(&q)
 	if result.Error == nil {
+		log.Println("Cache hits")
 		translationCacheHitCounter.WithLabelValues("translate").Inc()
 		c.JSON(200, gin.H{"result": q.Translation})
 		return
