@@ -19,6 +19,5 @@ FROM alpine:latest
 ARG APP_NAME
 WORKDIR /app
 COPY --from=backend-builder /app/contextdict ./
-VOLUME "/app/data"
 EXPOSE 8085
 CMD ["./contextdict"]

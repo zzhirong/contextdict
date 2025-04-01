@@ -16,7 +16,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/zzhirong/contextdict/config"
-	"gorm.io/driver/sqlite"
+	"gorm.io/driver/postgres"  // 替换 sqlite 导入
 	"gorm.io/gorm"
 
 	"context"
@@ -39,7 +39,7 @@ type TranslationResponse struct {
 
 var (
 	db                 *gorm.DB
-	cfg                = config.Load()
+	cfg                = config.Load("")
 	translationCounter = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "translation_requests_total",
@@ -58,8 +58,16 @@ var (
 
 func init() {
 	var err error
-
-	db, err = gorm.Open(sqlite.Open("translations.db"), &gorm.Config{})
+	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
+		cfg.Database.Host,
+		cfg.Database.Port,
+		cfg.Database.User,
+		cfg.Database.Password,
+		cfg.Database.DBName,
+		cfg.Database.SSLMode,
+	)
+	
+	db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Fatal("Failed to connect to database:", err)
 	}
@@ -167,7 +175,7 @@ func main() {
 
 	// Setup Prometheus metrics endpoint on port 8086
 	metricsServer := &http.Server{
-		Addr:    ":" + cfg.MetricServerPort,
+		Addr:    ":8086",
 		Handler: promhttp.Handler(),
 	}
 	go func() {
@@ -193,22 +201,23 @@ func main() {
 }
 
 // gracefulShutdown handles the graceful shutdown of HTTP servers
-func gracefulShutdown(srv *http.Server, metricsServer *http.Server) {
-	// Wait for interrupt signal to gracefully shutdown the server
+func gracefulShutdown(servers ...*http.Server) {
+	// Wait for interrupt signal to gracefully shutdown the servers
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
-	log.Println("Shutting down server...")
+	log.Println("Shutting down servers...")
 
-	// The context is used to inform the server it has 5 seconds to finish
-	// the request it is currently handling
+	// The context is used to inform the servers they have 5 seconds to finish
+	// the request they are currently handling
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	if err := srv.Shutdown(ctx); err != nil {
-		log.Fatal(err)
-	}
-	if err := metricsServer.Shutdown(ctx); err != nil {
-		log.Fatal(err)
+
+	// Shutdown all servers concurrently
+	for _, server := range servers {
+		if err := server.Shutdown(ctx); err != nil {
+			log.Fatal(err)
+		}
 	}
 }
 

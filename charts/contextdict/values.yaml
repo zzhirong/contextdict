@@ -9,6 +9,12 @@ config:
   ds_model: "ep-20250314123811-lt8tx"
   server_port: "8085"
   metric_server_port: "8086"
+  database:
+    host: "postgresql"
+    port: "5432"
+    user: "postgres"
+    dbname: "contextdict"
+    sslmode: "disable"
   prompts:
     translate: |
       Please help me to understand the `%s` in the context of `%s` in Chinese.
@@ -32,7 +38,7 @@ config:
 
       %s
 
-
 secrets:
   dsApiKey: ""  # 将通过 --set-string secrets.dsApiKey=xxx 注入
+  dbPassword: "" # 将通过 --set-string secrets.dbPassword=xxx 注入
 

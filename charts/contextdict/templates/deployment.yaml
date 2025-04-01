@@ -24,6 +24,11 @@ spec:
             secretKeyRef:
               name: {{ .Release.Name }}-secrets
               key: ds_api_key
+        - name: PS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Release.Name }}-secrets
+              key: ps_password
         volumeMounts:
         - name: config-volume
           mountPath: /etc/config.yaml

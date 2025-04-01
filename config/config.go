@@ -2,6 +2,7 @@ package config
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"path/filepath"
 
@@ -11,19 +12,27 @@ import (
 // 在 Config 结构体前添加 Prompts 定义
 type Prompts struct {
 	Translate          string `mapstructure:"translate"`
-	Format            string `mapstructure:"format"`
-	Summarize         string `mapstructure:"summarize"`
+	Format             string `mapstructure:"format"`
+	Summarize          string `mapstructure:"summarize"`
 	TranslateOnContext string `mapstructure:"translate_on_context"`
 	TranslateOrFormat  string `mapstructure:"translate_or_format"`
 }
 
 type Config struct {
-	DSApiKey    string  `mapstructure:"ds_api_key"`
-	DSBaseURL   string  `mapstructure:"ds_base_url"`
-	DSModel     string  `mapstructure:"ds_model"`
-	ServerPort  string  `mapstructure:"server_port"`
-	MetricServerPort  string  `mapstructure:"metric_server_port"`
-	Prompts     Prompts `mapstructure:"prompts"`
+	DSApiKey         string  `mapstructure:"ds_api_key"`
+	DSBaseURL        string  `mapstructure:"ds_base_url"`
+	DSModel          string  `mapstructure:"ds_model"`
+	ServerPort       string  `mapstructure:"server_port"`
+	MetricServerPort string  `mapstructure:"metric_server_port"`
+	Prompts          Prompts `mapstructure:"prompts"`
+	Database         struct {
+		Host     string `mapstructure:"host"`
+		Port     string `mapstructure:"port"`
+		User     string `mapstructure:"user"`
+		Password string `mapstructure:"password"`
+		DBName   string `mapstructure:"dbname"`
+		SSLMode  string `mapstructure:"sslmode"`
+	} `mapstructure:"database"`
 }
 
 // 修改返回类型
@@ -31,9 +40,18 @@ func (c *Config) GetPrompts() Prompts {
 	return c.Prompts
 }
 
-func Load() *Config {
-	viper.SetConfigName("config")
+// 尝试从三个位置加载配置
+// 1. 命令行参数 -c
+// 2. 当前目录
+// 3. 系统配置目录 /etc
+func Load(path string) *Config {
+	viper.SetConfigName("config") // 一定要在 SetConfigName 之前调用
 	viper.SetConfigType("yaml")
+
+	if path != "" {
+		viper.AddConfigPath(filepath.Dir(path))
+		viper.SetConfigName(filepath.Base(path))
+	}
 
 	// 使用指定的配置文件路径
 	configPath := flag.String("c", "", "配置文件路径")
@@ -52,8 +70,8 @@ func Load() *Config {
 	viper.SetDefault("server_port", "8085")
 
 	// 启用环境变量支持
-	viper.AutomaticEnv()
-	viper.BindEnv("ds_api_key", "V_API_KEY")
+	viper.BindEnv("ds_api_key", "DS_API_KEY")
+	viper.BindEnv("database.password", "PS_PASSWORD")
 
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
@@ -70,6 +88,7 @@ func Load() *Config {
 	if config.DSApiKey == "" {
 		log.Fatal("DeepSeek API Key 是必需的")
 	}
+	fmt.Println(viper.ConfigFileUsed())
 
 	// 添加配置文件监听
 	return &config

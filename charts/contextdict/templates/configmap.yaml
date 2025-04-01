@@ -4,11 +4,18 @@ metadata:
   name: {{ .Release.Name }}-config
 data:
   config.yaml: |
-    ds_api_key: {{.Values.config.ds_api_key }}
+    ds_api_key: ""
     ds_base_url: {{ .Values.config.ds_base_url }}
     ds_model: {{ .Values.config.ds_model }}
     server_port: {{ .Values.config.server_port }}
     metric_server_port: {{ .Values.config.metric_server_port }}
+    database:
+      host: {{ .Values.config.database.host }}
+      port: {{ .Values.config.database.port }}
+      user: {{ .Values.config.database.user }}
+      dbname: {{ .Values.config.database.dbname }}
+      sslmode: {{ .Values.config.database.sslmode }}
+      password: ""
     prompts:
       translate: {{ .Values.config.prompts.translate | nindent 8 }}
       format: {{ .Values.config.prompts.format | nindent 8 }}
