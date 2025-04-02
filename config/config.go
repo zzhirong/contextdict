@@ -2,7 +2,6 @@ package config
 
 import (
 	"flag"
-	"fmt"
 	"log"
 	"path/filepath"
 
@@ -11,7 +10,6 @@ import (
 
 // 在 Config 结构体前添加 Prompts 定义
 type Prompts struct {
-	Translate          string `mapstructure:"translate"`
 	Format             string `mapstructure:"format"`
 	Summarize          string `mapstructure:"summarize"`
 	TranslateOnContext string `mapstructure:"translate_on_context"`
@@ -88,8 +86,6 @@ func Load(path string) *Config {
 	if config.DSApiKey == "" {
 		log.Fatal("DeepSeek API Key 是必需的")
 	}
-	fmt.Println(viper.ConfigFileUsed())
 
-	// 添加配置文件监听
 	return &config
 }

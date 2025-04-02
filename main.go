@@ -2,9 +2,9 @@ package main
 
 import (
 	"embed"
-	"fmt"
 	"io/fs"
 	"log"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -12,14 +12,12 @@ import (
 	"syscall"
 	"time"
 
-
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/zzhirong/contextdict/config"
 	"gorm.io/driver/postgres" // 替换 sqlite 导入
 	"gorm.io/gorm"
-
 	"context"
 
 	"sync"
@@ -69,7 +67,6 @@ func init() {
 	)
 
 	db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
-		// Logger: logger.Default.LogMode(logger.Info), // 添加这行开启 SQL 日志
 	})
 	if err != nil {
 		log.Fatal("Failed to connect to database:", err)
@@ -232,8 +229,6 @@ func handleTranslate(c *gin.Context) {
 		return
 	}
 
-	translationCounter.WithLabelValues("translate").Inc()
-
 	// Check cache first
 	result := db.Where("keyword = ? AND context = ?", q.Keyword, q.Context).First(&q)
 	if result.Error == nil {
@@ -243,15 +238,16 @@ func handleTranslate(c *gin.Context) {
 		return
 	}
 
-	var prompt string
 	prompts := cfg.GetPrompts()
 	if q.Context != "" {
-		prompt = fmt.Sprintf(prompts.TranslateOnContext, q.Keyword, q.Context)
+		translationCounter.WithLabelValues("translate_on_context").Inc()
+		q.Translation, err = makeDeepSeekRequest(prompts.TranslateOnContext,
+			q.Keyword, q.Context)
 	} else {
-		prompt = fmt.Sprintf(prompts.TranslateOrFormat, q.Keyword)
+		translationCounter.WithLabelValues("translate").Inc()
+		q.Translation, err = makeDeepSeekRequest(prompts.TranslateOrFormat, q.Keyword)
 	}
 
-	q.Translation, err = makeDeepSeekRequest(prompt)
 	if err != nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Failed to translate text"})
 		return
@@ -265,9 +261,8 @@ func handleTranslate(c *gin.Context) {
 
 func handleFormat(c *gin.Context) {
 	prompts := cfg.GetPrompts()
-	prompt := fmt.Sprintf(prompts.Format, c.Query("keyword"))
 	translationCounter.WithLabelValues("format").Inc()
-	res, err := makeDeepSeekRequest(prompt)
+	res, err := makeDeepSeekRequest(prompts.Format, c.Query("keyword"))
 	if err != nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Failed to format text"})
 		return
@@ -279,9 +274,8 @@ func handleFormat(c *gin.Context) {
 
 func handleSummarize(c *gin.Context) {
 	prompts := cfg.GetPrompts()
-	prompt := fmt.Sprintf(prompts.Summarize, c.Query("keyword"))
 	translationCounter.WithLabelValues("summarize").Inc()
-	res, err := makeDeepSeekRequest(prompt)
+	res, err := makeDeepSeekRequest(prompts.Summarize, c.Query("keyword"))
 	if err != nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Failed to format text"})
 		return
@@ -291,27 +285,32 @@ func handleSummarize(c *gin.Context) {
 	})
 }
 
-func makeDeepSeekRequest(prompt string) (string, error) {
-	fmt.Println("prompt:", prompt)
+func makeDeepSeekRequest(prompt string, texts ...string) (string, error) {
 	config := openai.DefaultConfig(cfg.DSApiKey)
 	config.BaseURL = cfg.DSBaseURL
 
+	messages := make([]openai.ChatCompletionMessage, len(texts)+1)
+	messages[0] = openai.ChatCompletionMessage{
+		Role:    openai.ChatMessageRoleUser,
+		Content: prompt,
+	}
+	for i := range len(texts) {
+		messages[i+1] = openai.ChatCompletionMessage{
+			Role:    openai.ChatMessageRoleUser,
+			Content: texts[i],
+		}
+	}
 	client := openai.NewClientWithConfig(config)
 	resp, err := client.CreateChatCompletion(
 		context.Background(),
 		openai.ChatCompletionRequest{
-			Model: cfg.DSModel,
-			Messages: []openai.ChatCompletionMessage{
-				{
-					Role:    openai.ChatMessageRoleUser,
-					Content: prompt,
-				},
-			},
+			Model:    cfg.DSModel,
+			Messages: messages,
 		},
 	)
 
 	if err != nil {
-		fmt.Printf("ChatCompletion error: %v\n", err)
+		log.Printf("ChatCompletion error: %v\n", err)
 		return "", err
 	}
 

@@ -42,6 +42,9 @@ apiVersion: v1
 kind: Service
 metadata:
   name: {{ .Release.Name }}-service
+  annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8086"
 spec:
   selector:
     app: {{ .Release.Name }}
