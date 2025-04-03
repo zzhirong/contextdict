@@ -143,6 +143,7 @@ textarea {
   border: 1px solid #ccc;
   border-radius: 4px;
   resize: vertical;
+  font-size: 16px;
 }
 
 button {
@@ -167,6 +168,7 @@ button:hover {
 .translation-result {
   border: 1px solid #ccc;
   border-radius: 4px;
+  font-size: 16px;
   margin-top: 1rem;
   width: 100%;
   resize: vertical;

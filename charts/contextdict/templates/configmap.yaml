@@ -17,8 +17,11 @@ data:
       sslmode: {{ .Values.config.database.sslmode }}
       password: ""
     prompts:
-      translate: {{ .Values.config.prompts.translate | nindent 8 }}
-      format: {{ .Values.config.prompts.format | nindent 8 }}
-      summarize: {{ .Values.config.prompts.summarize | nindent 8 }}
-      translate_on_context: {{ .Values.config.prompts.translate_on_context | nindent 8 }}
-      translate_or_format: {{ .Values.config.prompts.translate_or_format | nindent 8 }}
+      format: |
+        {{ .Values.config.prompts.format | nindent 8 }}
+      summarize: |
+        {{ .Values.config.prompts.summarize | nindent 8 }}
+      translate_on_context: |
+        {{ .Values.config.prompts.translate_on_context | nindent 8 }}
+      translate_or_format: |
+        {{ .Values.config.prompts.translate_or_format | nindent 8 }}
