@@ -42,12 +42,10 @@ jobs:
             zzhirong/contextdict:latest
 
       - name: Install Helm
-        uses: azure/setup-helm@v3
+        uses: azure/setup-helm@v4.3.0
 
       - name: Setup kubectl
-        uses: azure/setup-kubectl@v3
-        with:
-          version: 'latest'
+        uses: azure/setup-kubectl@v4
 
       - name: Configure K8s credentials
         run: |
