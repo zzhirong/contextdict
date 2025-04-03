@@ -120,4 +120,3 @@ config:
 secrets:
   dsApiKey: ""  # 将通过 --set-string secrets.dsApiKey=xxx 注入
   dbPassword: "" # 将通过 --set-string secrets.dbPassword=xxx 注入
-
