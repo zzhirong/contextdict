@@ -8,4 +8,4 @@ fi
 helm upgrade --install contextdict ./contextdict \
     --set-string secrets.dsApiKey="$DS_API_KEY" \
     --set-string secrets.dbPassword="$PS_PASSWORD" \
-    --set image.tag="v0.0.10"
+    --set-string image.tag="latest"

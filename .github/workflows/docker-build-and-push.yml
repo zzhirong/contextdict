@@ -42,12 +42,10 @@ jobs:
             zzhirong/contextdict:latest
 
       - name: Install Helm
-        uses: azure/setup-helm@v3
+        uses: azure/setup-helm@v4.3.0
 
       - name: Setup kubectl
-        uses: azure/setup-kubectl@v3
-        with:
-          version: 'latest'
+        uses: azure/setup-kubectl@v4
 
       - name: Configure K8s credentials
         run: |
@@ -58,5 +56,6 @@ jobs:
       - name: Deploy to K8s
         run: |
           helm upgrade --install contextdict ./charts/contextdict \
-            --set image.tag=${{ github.ref_name }} \
-            --set-string secrets.dbPassword=${{ secrets.PS_PASSWORD }}
+            --set-string image.tag='${{ github.ref_name }}' \
+            --set-string secrets.dsApiKey='${{ secrets.DS_API_KEY }}' \
+            --set-string secrets.dbPassword='${{ secrets.PS_PASSWORD }}'
