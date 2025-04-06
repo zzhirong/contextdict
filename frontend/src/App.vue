@@ -62,7 +62,7 @@ function updateSelection() {
 async function translate() {
   const context = inputText.value ?? ""
   if(context == "") return
-  let query = `translate?keyword=${encodeURIComponent(context)}`
+  let query = `api/translate?keyword=${encodeURIComponent(context)}`
   if (selectedText.value != ""){
      query = `translate?keyword=${encodeURIComponent(selectedText.value)}` +
       `&context=${encodeURIComponent(context)}`
@@ -81,7 +81,7 @@ async function format() {
   try {
     isLoading.value = true
     const response = await axios.get(
-      `format?keyword=${encodeURIComponent(inputText.value??"")}`
+      `/api/format?keyword=${encodeURIComponent(inputText.value??"")}`
     )
     translation.value = response.data.result
   } catch (error) {
@@ -94,7 +94,7 @@ async function summarize() {
   try {
     isLoading.value = true
     const response = await axios.get(
-      `summarize?keyword=${encodeURIComponent(inputText.value??"")}`
+      `/api/summarize?keyword=${encodeURIComponent(inputText.value??"")}`
     )
     translation.value = response.data.result
   } catch (error) {
@@ -104,7 +104,14 @@ async function summarize() {
 }
 
 function copyMarkdown() {
-  navigator.clipboard.writeText(translation.value)
+    navigator.clipboard
+          .writeText(translation.value)
+          .then(() => {
+            alert("successfully copied");
+          })
+          .catch(() => {
+            alert("something went wrong");
+          });
 }
 
 // Run translation if query parameter exists
