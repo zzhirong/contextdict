@@ -31,7 +31,7 @@ spec:
               key: ps_password
         volumeMounts:
         - name: config-volume
-          mountPath: /etc/config.yaml
+          mountPath: /etc/contextdict/config.yaml
           subPath: config.yaml
       volumes:
         - name: config-volume
@@ -51,9 +51,9 @@ spec:
   ports:
     - protocol: TCP
       name: contextdict-port
-      port: {{ .Values.config.server_port | default 8085 }}
-      targetPort: {{ .Values.config.server_port | default 8085 }}
+      port: 8085
+      targetPort: {{ ((.Files.Get "config.yaml" | fromYaml).ServerPort) }}
     - protocol: TCP
       name: contextdict-metric-port
-      port: {{ .Values.config.metric_server_port | default 8086 }}
-      targetPort: {{ .Values.config.metric_server_port | default 8086 }}
+      port: 8086
+      targetPort: {{ ((.Files.Get "config.yaml" | fromYaml).MetricsPort) }}

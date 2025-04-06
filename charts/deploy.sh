@@ -6,6 +6,6 @@ if [ -z "$DS_API_KEY" ]; then
 fi
 
 helm upgrade --install contextdict ./contextdict \
-    --set-string secrets.dsApiKey="$DS_API_KEY" \
+    --set-string secrets.dsApiKey="$AI_API_KEY" \
     --set-string secrets.dbPassword="$PS_PASSWORD" \
     --set-string image.tag="latest"

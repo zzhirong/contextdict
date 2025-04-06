@@ -4,24 +4,7 @@ metadata:
   name: {{ .Release.Name }}-config
 data:
   config.yaml: |
-    ds_api_key: ""
-    ds_base_url: {{ .Values.config.ds_base_url }}
-    ds_model: {{ .Values.config.ds_model }}
-    server_port: {{ .Values.config.server_port }}
-    metric_server_port: {{ .Values.config.metric_server_port }}
-    database:
-      host: {{ .Values.config.database.host }}
-      port: {{ .Values.config.database.port }}
-      user: {{ .Values.config.database.user }}
-      dbname: {{ .Values.config.database.dbname }}
-      sslmode: {{ .Values.config.database.sslmode }}
-      password: ""
-    prompts:
-      format: |
-        {{ .Values.config.prompts.format | nindent 8 }}
-      summarize: |
-        {{ .Values.config.prompts.summarize | nindent 8 }}
-      translate_on_context: |
-        {{ .Values.config.prompts.translate_on_context | nindent 8 }}
-      translate_or_format: |
-        {{ .Values.config.prompts.translate_or_format | nindent 8 }}
+    {{- $baseConfig := .Files.Get "config.yaml" | fromYaml }}
+    {{- $overrideConfig := .Values.appConfigOverrides | default dict }}
+    {{- $mergedConfig := mergeOverwrite (deepCopy $baseConfig) $overrideConfig }}
+    {{- $mergedConfig | toYaml | nindent 8 }}
