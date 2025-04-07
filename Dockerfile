@@ -1,13 +1,13 @@
 # Build frontend
-FROM node:23-alpine as frontend-builder
+FROM node:23-alpine AS frontend-builder
 COPY ./frontend /frontend
 WORKDIR /frontend
 RUN npm install
 RUN npm run build
 
 # Build backend
-FROM golang:1.23-alpine as backend-builder
-run apk add build-base
+FROM golang:1.23-alpine AS backend-builder
+RUN apk add build-base
 WORKDIR /app
 ARG APP_NAME
 COPY . ./
