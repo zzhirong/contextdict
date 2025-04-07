@@ -22,12 +22,15 @@
             <button @click="summarize" :disabled="isLoading">
               {{ isLoading ? 'thinking...' : 'Summarize' }}
             </button>
+            <button v-if="isLoading" @click="cancelRequest" class="cancel-button">
+              Stop
+            </button>
           </div>
         </div>
         <div v-if="translation" class="translation-result">
           <div class="markdown-content" v-html="renderedTranslation"></div>
           <button @click="copyMarkdown" class="copy-button">
-            Copy Markdown
+            Copy Markdown {{ copyStatus }}
           </button>
         </div>
       </div>
@@ -39,6 +42,9 @@
 import { ref, computed } from 'vue'
 import { marked } from 'marked'
 import axios from 'axios'
+import useClipboard from 'vue-clipboard3'
+
+const { toClipboard } = useClipboard()
 
 const selectedText = ref('')
 const isLoading = ref(false)
@@ -59,9 +65,16 @@ function updateSelection() {
   if (selection) selectedText.value = selection
 }
 
+// 在 script setup 顶部添加
+const controller = ref<AbortController | null>(null)
+
+// 修改所有请求函数，这里以 translate 为例
 async function translate() {
+  if (isLoading.value) return
   const context = inputText.value ?? ""
   if(context == "") return
+  
+  controller.value = new AbortController()
   let query = `api/translate?keyword=${encodeURIComponent(context)}`
   if (selectedText.value != ""){
      query = `translate?keyword=${encodeURIComponent(selectedText.value)}` +
@@ -69,12 +82,27 @@ async function translate() {
   }
   isLoading.value = true
   try {
-    const response = await axios.get(query)
+    const response = await axios.get(query, {
+      signal: controller.value.signal
+    })
     translation.value = response.data.result
   } catch (error) {
-    console.error('Translation failed:', error)
+    if (axios.isCancel(error)) {
+      console.log('Request canceled')
+    } else {
+      console.error('Translation failed:', error)
+    }
   }
   isLoading.value = false
+}
+
+// 添加取消请求的函数
+function cancelRequest() {
+  if (controller.value) {
+    controller.value.abort()
+    controller.value = null
+    isLoading.value = false
+  }
 }
 
 async function format() {
@@ -103,15 +131,21 @@ async function summarize() {
   isLoading.value = false
 }
 
-function copyMarkdown() {
-    navigator.clipboard
-          .writeText(translation.value)
-          .then(() => {
-            alert("successfully copied");
-          })
-          .catch(() => {
-            alert("something went wrong");
-          });
+const copyStatus = ref('')
+
+async function copyMarkdown() {
+    try {
+        await toClipboard(translation.value)
+        copyStatus.value = '✓'
+        setTimeout(() => {
+            copyStatus.value = ''
+        }, 2000)
+    } catch (error) {
+        copyStatus.value = '✗'
+        setTimeout(() => {
+            copyStatus.value = ''
+        }, 2000)
+    }
 }
 
 // Run translation if query parameter exists
@@ -195,5 +229,13 @@ button:disabled {
   display: flex;
   gap: 1rem;
   justify-content: flex-start;
+}
+
+.cancel-button {
+  background-color: #ff4444;
+}
+
+.cancel-button:hover {
+  background-color: #cc0000;
 }
 </style>
