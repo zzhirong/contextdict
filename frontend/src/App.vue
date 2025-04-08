@@ -18,16 +18,16 @@
             }}
             </button>
             <button @click="format" :disabled="isLoading">
-              {{ isLoading ? 'thinking...' : 'Format' }}
+              Format
             </button>
             <button @click="summarize" :disabled="isLoading">
-              {{ isLoading ? 'thinking...' : 'Summarize' }}
+              Summarize
             </button>
             <button @click="explain" :disabled="isLoading">
-              {{ isLoading ? 'thinking...' : 'Explain' }}
+              Explain
             </button>
             <button @click="analyze" :disabled="isLoading">
-              {{ isLoading ? 'thinking...' : 'Analyze' }}
+              Analyze
             </button>
             <button v-if="isLoading" @click="cancelRequest" class="cancel-button">
               Stop
@@ -241,7 +241,7 @@ button:disabled {
 }
 
 button {
-  padding: 0.2rem 0.4rem;
+  padding: 0.5rem 1rem;
   background-color: #4CAF50;
   color: white;
   border: none;

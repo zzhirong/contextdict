@@ -1,6 +1,6 @@
 ServerPort: 8085
 MetricsPort: 8086
-MaxURLLen: 1024
+MaxURLLen: 3024
 Database:
   Host: "aws-0-ap-northeast-1.pooler.supabase.com"
   Port: "5432"
