@@ -6,6 +6,7 @@
           <textarea
             v-model="inputText"
             @mouseup="updateSelection"
+            @touchend="updateSelection"
             @input="clearSelection"
           >
           </textarea>
@@ -22,6 +23,12 @@
             <button @click="summarize" :disabled="isLoading">
               {{ isLoading ? 'thinking...' : 'Summarize' }}
             </button>
+            <button @click="explain" :disabled="isLoading">
+              {{ isLoading ? 'thinking...' : 'Explain' }}
+            </button>
+            <button @click="analyze" :disabled="isLoading">
+              {{ isLoading ? 'thinking...' : 'Analyze' }}
+            </button>
             <button v-if="isLoading" @click="cancelRequest" class="cancel-button">
               Stop
             </button>
@@ -30,7 +37,7 @@
         <div v-if="translation" class="translation-result">
           <div class="markdown-content" v-html="renderedTranslation"></div>
           <button @click="copyMarkdown" class="copy-button">
-            Copy Markdown {{ copyStatus }}
+            Copy {{ copyStatus }}
           </button>
         </div>
       </div>
@@ -50,7 +57,7 @@ const selectedText = ref('')
 const isLoading = ref(false)
 const translation = ref('')
 const params = new URLSearchParams(window.location.search);
-const q = params.get('keyword');
+const q = params.get('text');
 const inputText = ref(q)
 const renderedTranslation = computed(() => {
   return marked(translation.value)
@@ -70,30 +77,7 @@ const controller = ref<AbortController | null>(null)
 
 // 修改所有请求函数，这里以 translate 为例
 async function translate() {
-  if (isLoading.value) return
-  const context = inputText.value ?? ""
-  if(context == "") return
-  
-  controller.value = new AbortController()
-  let query = `api/translate?keyword=${encodeURIComponent(context)}`
-  if (selectedText.value != ""){
-     query = `translate?keyword=${encodeURIComponent(selectedText.value)}` +
-      `&context=${encodeURIComponent(context)}`
-  }
-  isLoading.value = true
-  try {
-    const response = await axios.get(query, {
-      signal: controller.value.signal
-    })
-    translation.value = response.data.result
-  } catch (error) {
-    if (axios.isCancel(error)) {
-      console.log('Request canceled')
-    } else {
-      console.error('Translation failed:', error)
-    }
-  }
-  isLoading.value = false
+  await callApi({role:'translate'})
 }
 
 // 添加取消请求的函数
@@ -105,30 +89,54 @@ function cancelRequest() {
   }
 }
 
-async function format() {
+async function callApi(params: any = {}) {
+  if (isLoading.value) return
+  const text = inputText.value ?? ""
+  if(text == "") return
+  let query = `/api?role=${params.role}`
+  params.text = text
+  if (selectedText.value!= ""){
+    params.selected = selectedText.value
+  }
+  for (const key in params) {
+    if(key == "role"){
+        continue
+    }
+    if (params.hasOwnProperty(key)) {
+      query += `&${key}=${encodeURIComponent(params[key])}`
+    }
+  } 
+  controller.value = new AbortController()
+  isLoading.value = true
   try {
-    isLoading.value = true
-    const response = await axios.get(
-      `/api/format?keyword=${encodeURIComponent(inputText.value??"")}`
+    const response = await axios.get(query,
+      { signal: controller.value.signal }
     )
     translation.value = response.data.result
   } catch (error) {
-    console.error('Failed to format', error)
+    if (axios.isCancel(error)) {
+      console.log('Request canceled')
+    } else {
+      console.error(`${params.role} failed:`, error)
+    }
   }
   isLoading.value = false
 }
 
+async function format() {
+  await callApi({role: 'format'})
+}
+
 async function summarize() {
-  try {
-    isLoading.value = true
-    const response = await axios.get(
-      `/api/summarize?keyword=${encodeURIComponent(inputText.value??"")}`
-    )
-    translation.value = response.data.result
-  } catch (error) {
-    console.error('Faield to summerize', error)
-  }
-  isLoading.value = false
+  await callApi({role:'summarize'})
+}
+
+async function explain() {
+  await callApi({role:'explain'})
+}
+
+async function analyze() {
+  await callApi({role:'analyze'})
 }
 
 const copyStatus = ref('')
@@ -227,8 +235,20 @@ button:disabled {
 
 .button-group {
   display: flex;
-  gap: 1rem;
+  gap: 0.2rem;
+  flex-wrap: wrap;  /* 允许按钮换行 */
   justify-content: flex-start;
+}
+
+button {
+  padding: 0.2rem 0.4rem;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  flex: 0 1 auto;  /* 允许按钮自适应宽度 */
+  margin-bottom: 0.5rem; /* 增加垂直间距 */
 }
 
 .cancel-button {

@@ -2,11 +2,11 @@ package handlers
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/zzhirong/contextdict/config"
 	"github.com/zzhirong/contextdict/internal/ai"
 	"github.com/zzhirong/contextdict/internal/database"
 	"github.com/zzhirong/contextdict/internal/metrics"
@@ -15,18 +15,19 @@ import (
 )
 
 type query struct {
-	Keyword string `form:"keyword" binding:"required"`
-	Context string `form:"context"`
+	Text     string `form:"text" binding:"required"`
+	Role     string `form:"role" binding:"required"`
+	Selected string `form:"selected"`
 }
 
 type APIHandler struct {
 	Repo     database.Repository
 	AIClient ai.Client
 	Metrics  *metrics.Metrics
-	Prompts  *config.PromptConfig
+	Prompts  map[string]string
 }
 
-func NewAPIHandler(repo database.Repository, aiClient ai.Client, metrics *metrics.Metrics, prompts *config.PromptConfig) *APIHandler {
+func NewAPIHandler(repo database.Repository, aiClient ai.Client, metrics *metrics.Metrics, prompts map[string]string) *APIHandler {
 	return &APIHandler{
 		Repo:     repo,
 		AIClient: aiClient,
@@ -36,60 +37,70 @@ func NewAPIHandler(repo database.Repository, aiClient ai.Client, metrics *metric
 }
 
 // 添加辅助函数
-func checkKeyword(c *gin.Context) (*query, bool) {
+func checkText(c *gin.Context) (*query, bool) {
 	q := &query{}
 	if err := c.BindQuery(q); err != nil {
-		log.Printf("Missing required parameter: keyword")
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Missing required parameter: keyword"})
+		log.Printf("Missing required parameter: text")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Missing required parameter: text"})
 		return nil, false
 	}
 	return q, true
 }
 
 func (h *APIHandler) Translate(c *gin.Context) {
-	q, ok := checkKeyword(c)
+	q, ok := checkText(c)
 	if !ok {
 		return
 	}
-	cachedResult, err := h.Repo.FindTranslation(c.Request.Context(), q.Keyword, q.Context)
+	cachedResult, err := h.Repo.FindTranslation(c.Request.Context(), q.Text, q.Selected)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		log.Printf("Error checking cache for keyword='%s', context='%s': %v", q.Keyword, q.Context, err)
+		log.Printf("Error checking cache for text='%s', selected='%s': %v", q.Text, q.Selected, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error checking cache"})
 		return
 	}
 
 	if cachedResult != nil {
-		log.Printf("Cache hit for keyword='%s', context='%s'", q.Keyword, q.Context)
+		log.Printf("Cache hit for text='%s', context='%s'", q.Text, q.Selected)
 		h.Metrics.TranslationCacheHitCounter.WithLabelValues("translate").Inc()
 		c.JSON(http.StatusOK, gin.H{"result": cachedResult.Translation})
 		return
 	}
 
-	log.Printf("Cache miss for keyword='%s', context='%s'. Querying AI.", q.Keyword, q.Context)
+	log.Printf("Cache miss for text='%s', selected='%s'. Querying AI.", q.Text, q.Selected)
 
 	var translation string
 	var aiErr error
 	var promptTypeLabel string
 
-	if q.Context != "" {
-		promptTypeLabel = "translate_context"
-		translation, aiErr = h.AIClient.Generate(c.Request.Context(), h.Prompts.TranslateOnContext, q.Keyword, q.Context)
+	if q.Selected != "" {
+		promptTypeLabel = "translate_selected"
+		translation, aiErr = h.AIClient.Generate(
+			c.Request.Context(),
+			h.Prompts["TranslateOnSelected"],
+			q.Selected,
+			q.Text,
+		)
 	} else {
 		promptTypeLabel = "translate"
-		translation, aiErr = h.AIClient.Generate(c.Request.Context(), h.Prompts.TranslateOrFormat, q.Keyword)
+		translation, aiErr = h.AIClient.Generate(c.Request.Context(), h.Prompts["TranslateOrFormat"], q.Text)
 	}
 
 	h.Metrics.TranslationCounter.WithLabelValues(promptTypeLabel).Inc()
 
 	if aiErr != nil {
-		log.Printf("AI generation failed for keyword='%s', context='%s': %v", q.Keyword, q.Context, aiErr)
-		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "AI service failed to generate translation"})
+		log.Printf("AI generation failed for text='%s', selected='%s': %v",
+			q.Text, q.Selected, aiErr)
+		c.JSON(http.StatusServiceUnavailable,
+			gin.H{"error": "AI service failed to generate translation"})
 		return
 	}
 
 	if translation == "" {
-		log.Printf("AI returned empty translation for keyword='%s',context='%s'",
-			q.Keyword, q.Context)
+		log.Printf(
+			"AI returned empty translation for text='%s',selected='%s'",
+			q.Text,
+			q.Selected,
+		)
 		c.JSON(
 			http.StatusInternalServerError,
 			gin.H{"error": "AI service returned an empty result"},
@@ -98,65 +109,49 @@ func (h *APIHandler) Translate(c *gin.Context) {
 	}
 
 	newRecord := &models.TranslationResponse{
-		Keyword:     q.Keyword,
-		Context:     q.Context,
+		Text:        q.Text,
+		Selected:    q.Selected,
 		Translation: translation,
 	}
 	if err := h.Repo.CreateTranslation(c.Request.Context(), newRecord); err != nil {
-		log.Printf("Error caching translation for keyword='%s', context='%s': %v", q.Keyword, q.Context, err)
+		log.Printf("Error caching translation for text='%s', selected='%s': %v", q.Text, q.Selected, err)
 	} else {
-		log.Printf("Successfully cached translation for keyword='%s', context='%s'", q.Keyword, q.Context)
+		log.Printf("Successfully cached translation for text='%s', selected='%s'", q.Text, q.Selected)
 	}
 
 	c.JSON(http.StatusOK, gin.H{"result": translation})
 }
 
-func (h *APIHandler) Format(c *gin.Context) {
-	q, ok := checkKeyword(c)
+func (h *APIHandler) Handle(c *gin.Context) {
+	q, ok := checkText(c)
 	if !ok {
 		return
 	}
+	if q.Role == "translate" {
+		h.Translate(c)
+		return
+	}
+	h.Metrics.TranslationCounter.WithLabelValues(q.Role).Inc()
 
-	h.Metrics.TranslationCounter.WithLabelValues("format").Inc()
+	var prompt string
+	if prompt, ok = h.Prompts[q.Role]; !ok {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid role"})
+		return
+	}
 
-	result, err := h.AIClient.Generate(c.Request.Context(), h.Prompts.Format, q.Keyword)
+	result, err := h.AIClient.Generate(c.Request.Context(), prompt, q.Text)
 	if err != nil {
-		log.Printf("AI generation failed for format keyword='%s': %v", q.Keyword, err)
-		c.JSON(http.StatusServiceUnavailable,
-			gin.H{"error": "AI service failed to format text"})
+		log.Printf("AI generation failed for %s text='%s': %v", q.Role, q.Text, err)
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "AI service failed to process text"})
 		return
 	}
 
 	if result == "" {
-		log.Printf("AI returned empty format for keyword='%s'", q.Keyword)
-		c.JSON(http.StatusInternalServerError,
-			gin.H{"error": "AI service returned an empty result"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"result": result})
-}
-
-func (h *APIHandler) Summarize(c *gin.Context) {
-	q, ok := checkKeyword(c)
-	if !ok {
-		return
-	}
-
-	h.Metrics.TranslationCounter.WithLabelValues("summarize").Inc()
-
-	result, err := h.AIClient.Generate(c.Request.Context(), h.Prompts.Summarize, q.Keyword)
-	if err != nil {
-		log.Printf("AI generation failed for summarize keyword='%s': %v", q.Keyword, err)
-		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "AI service failed to summarize text"})
-		return
-	}
-
-	if result == "" {
-		log.Printf("AI returned empty summary for keyword='%s'", q.Keyword)
+		log.Printf("AI returned empty result for %s text='%s'", q.Role, q.Text)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "AI service returned an empty result"})
 		return
 	}
 
+	fmt.Printf("The response length: %d\n", len(result))
 	c.JSON(http.StatusOK, gin.H{"result": result})
 }

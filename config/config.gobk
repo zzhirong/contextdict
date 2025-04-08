@@ -15,7 +15,7 @@ type Config struct {
 	Database    DatabaseConfig  `yaml:"Database"`
 	AI          AIConfig        `yaml:"AI"`
 	RateLimit   RateLimitConfig `yaml:"RateLimit"`
-	Prompts     map[string]string    `yaml:"Prompts"`
+	Prompts     PromptConfig    `yaml:"Prompts"`
 }
 
 type DatabaseConfig struct {
@@ -37,6 +37,13 @@ type RateLimitConfig struct {
 	Enabled    bool    `yaml:"Enabled" env-default:"true"`
 	Rate       float64 `yaml:"Rate" env-default:"10"` // requests per second
 	ExpireDays int     `yaml:"ExpireDays" env-default:"1"`
+}
+
+type PromptConfig struct {
+	TranslateOnContext string `yaml:"TranslateOnContext"`
+	TranslateOrFormat  string `yaml:"TranslateOrFormat"`
+	Format             string `yaml:"Format"`
+	Summarize          string `yaml:"Summarize"`
 }
 
 // 按照优先级查找配置文件
@@ -72,7 +79,7 @@ func Load(path string) *Config {
 	}
 	// Simple validation example
 	if cfg.AI.APIKey == "" {
-		log.Fatalf("Warning: DS_API_KEY is not set or using default. AI features will likely fail.")
+		log.Fatalf("Warning: AI_API_KEY is not set or using default. AI features will likely fail.")
 	}
 
 	log.Println("Configuration loaded.")

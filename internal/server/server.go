@@ -52,12 +52,11 @@ func New(
 	}
 	router.StaticFS("/assets", http.FS(assetsFS))
 
-	apiGroup := router.Group("/api")
-	{
-		apiGroup.GET("/translate", apiHandler.Translate)
-		apiGroup.GET("/format", apiHandler.Format)
-		apiGroup.GET("/summarize", apiHandler.Summarize)
-	}
+	router.GET("/api", apiHandler.Handle)
+	router.GET("/test_keepalive", func(c *gin.Context) {
+            time.Sleep(16 * time.Second)
+            c.String(http.StatusOK, "OK")
+	})
 
 	return &GinServer{
 		router: router,
@@ -70,9 +69,9 @@ func (s *GinServer) Start() *http.Server {
 	srv := &http.Server{
 		Addr:         s.addr,
 		Handler:      s.router,
-		ReadTimeout:  10 * time.Second, // Example timeouts
-		WriteTimeout: 10 * time.Second,
-		IdleTimeout:  60 * time.Second,
+		ReadTimeout:  60 * time.Second, // Example timeouts
+		WriteTimeout: 60 * time.Second,
+		IdleTimeout:  120 * time.Second,
 	}
 
 	go func() {

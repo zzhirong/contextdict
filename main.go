@@ -45,7 +45,7 @@ func main() {
 
 	promMetrics := metrics.NewMetrics()
 
-	apiHandler := handlers.NewAPIHandler(dbRepo, aiClient, promMetrics, &cfg.Prompts)
+	apiHandler := handlers.NewAPIHandler(dbRepo, aiClient, promMetrics, cfg.Prompts)
 
 	servers := make(map[string]*http.Server)
 	servers["metrics"] = metrics.StartServer(":" + cfg.MetricsPort)
