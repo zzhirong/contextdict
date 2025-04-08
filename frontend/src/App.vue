@@ -117,7 +117,8 @@ async function callApi(params: any = {}) {
     if (axios.isCancel(error)) {
       console.log('Request canceled')
     } else {
-      console.error(`${params.role} failed:`, error)
+      // console.error(`${params.role} failed:`, error)
+      translation.value = (error as Error).message
     }
   }
   isLoading.value = false
