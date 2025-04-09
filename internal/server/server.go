@@ -37,7 +37,7 @@ func New(
 
 	if rlcfg.Enabled {
 		log.Printf("IP Rate Limiting enabled (Rate: %.2f/s, ExpireDays: %d)", rlcfg.Rate, rlcfg.ExpireDays)
-		router.Use(mw.IPRateLimiter(rlcfg.Rate, rlcfg.ExpireDays))
+		router.Use(mw.IPRateLimiter(rlcfg.Rate, rlcfg.ExpireDays, rlcfg.RealIPHeader))
 	} else {
 		log.Println("IP Rate Limiting disabled.")
 	}
@@ -57,8 +57,8 @@ func New(
 
 	router.GET("/api", apiHandler.Handle)
 	router.GET("/test_keepalive", func(c *gin.Context) {
-            time.Sleep(16 * time.Second)
-            c.String(http.StatusOK, "OK")
+		time.Sleep(16 * time.Second)
+		c.String(http.StatusOK, "OK")
 	})
 
 	return &GinServer{

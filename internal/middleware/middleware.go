@@ -39,7 +39,7 @@ func LimitURLLen(maxURLLen int) gin.HandlerFunc {
 }
 
 // 根据 ip 限速，单位是
-func IPRateLimiter(rate float64, expireDays int) gin.HandlerFunc {
+func IPRateLimiter(rate float64, expireDays int, RealIPHeaderName string) gin.HandlerFunc {
 	ttl := time.Duration(expireDays) * 24 * time.Hour
 	lmt := tollbooth.NewLimiter(
 		rate,
@@ -48,8 +48,9 @@ func IPRateLimiter(rate float64, expireDays int) gin.HandlerFunc {
 		},
 	)
 	lmt.SetIPLookup((limiter.IPLookup{
-		Name:           "Cf-Connecting-Ip",
-		IndexFromRight: 0,
+		// 大小写敏感, 不能是 Cf-Connecting-Ip
+		Name:           RealIPHeaderName,
+		IndexFromRight: 0, // 从右往左数, 所以优先 CF-Connecting-IP
 	}))
 	return LimitHandler(lmt)
 }

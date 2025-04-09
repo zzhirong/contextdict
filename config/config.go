@@ -9,13 +9,13 @@ import (
 )
 
 type Config struct {
-	ServerPort  string          `yaml:"ServerPort" env-default:"8080"`
-	MaxURLLen   int             `yaml:"MaxURLLen"`
-	MetricsPort string          `yaml:"MetricsPort" env-default:"8086"`
-	Database    DatabaseConfig  `yaml:"Database"`
-	AI          AIConfig        `yaml:"AI"`
-	RateLimit   RateLimitConfig `yaml:"RateLimit"`
-	Prompts     map[string]string    `yaml:"Prompts"`
+	ServerPort  string            `yaml:"ServerPort" env-default:"8080"`
+	MaxURLLen   int               `yaml:"MaxURLLen"`
+	MetricsPort string            `yaml:"MetricsPort" env-default:"8086"`
+	Database    DatabaseConfig    `yaml:"Database"`
+	AI          AIConfig          `yaml:"AI"`
+	RateLimit   RateLimitConfig   `yaml:"RateLimit"`
+	Prompts     map[string]string `yaml:"Prompts"`
 }
 
 type DatabaseConfig struct {
@@ -34,9 +34,10 @@ type AIConfig struct {
 }
 
 type RateLimitConfig struct {
-	Enabled    bool    `yaml:"Enabled" env-default:"true"`
-	Rate       float64 `yaml:"Rate" env-default:"10"` // requests per second
-	ExpireDays int     `yaml:"ExpireDays" env-default:"1"`
+	Enabled      bool    `yaml:"Enabled" env-default:"true"`
+	Rate         float64 `yaml:"Rate" env-default:"10"` // requests per second
+	ExpireDays   int     `yaml:"ExpireDays" env-default:"1"`
+	RealIPHeader string  `yaml:"RealIPHeader" env-default:"CF-Connecting-IP"`
 }
 
 // 按照优先级查找配置文件

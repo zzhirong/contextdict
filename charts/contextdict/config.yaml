@@ -16,6 +16,7 @@ RateLimit:
   Enabled: true
   Rate: 1 # requests/second
   ExpireDays: 1
+  RealIPHeader: "CF-Connecting-IP" # 大小写敏感,  "X-Forwarded-For", "X-Real-IP", "CF-Connecting-IP"
 Prompts:
   format: |
     # 角色与任务

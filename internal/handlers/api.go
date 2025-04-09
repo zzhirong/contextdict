@@ -48,7 +48,6 @@ func checkText(c *gin.Context) (*query, bool) {
 }
 
 func (h *APIHandler) Translate(c *gin.Context) {
-	log.Println("++++++++++++", c.Request.Header["Cf-Connecting-Ip"])
 	q, ok := checkText(c)
 	if !ok {
 		return

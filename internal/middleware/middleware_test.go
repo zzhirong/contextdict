@@ -13,14 +13,15 @@ import (
 func TestIPRateLimit(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
-	router.Use(IPRateLimiter(10, 1))
+	router.Use(IPRateLimiter(10, 1, "CF-Connecting-IP"))
 	router.GET("/test", func(c *gin.Context) {
 		c.String(200, "ok")
 	})
 
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/test", nil)
-	req.RemoteAddr = "127.0.0.1:12345"
+	req.Header.Set("Cf-Connecting-IP", "127.0.0.1")
+	// req.RemoteAddr = "127.0.0.1:12345"
 
 	// 测试正常请求
 	router.ServeHTTP(w, req)
