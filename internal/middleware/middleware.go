@@ -5,11 +5,22 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/didip/tollbooth/v7"
-	"github.com/didip/tollbooth/v7/limiter"
-	"github.com/didip/tollbooth_gin"
+	"github.com/didip/tollbooth/v8"
+	"github.com/didip/tollbooth/v8/limiter"
 	"github.com/gin-gonic/gin"
 )
+
+func LimitHandler(lmt *limiter.Limiter) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		httpError := tollbooth.LimitByRequest(lmt, c.Writer, c.Request)
+		if httpError != nil {
+			c.Data(httpError.StatusCode, lmt.GetMessageContentType(), []byte(httpError.Message))
+			c.Abort()
+		} else {
+			c.Next()
+		}
+	}
+}
 
 // 为防止滥用，限制 URL 长度
 func LimitURLLen(maxURLLen int) gin.HandlerFunc {
@@ -30,11 +41,15 @@ func LimitURLLen(maxURLLen int) gin.HandlerFunc {
 // 根据 ip 限速，单位是
 func IPRateLimiter(rate float64, expireDays int) gin.HandlerFunc {
 	ttl := time.Duration(expireDays) * 24 * time.Hour
-	limiter := tollbooth.NewLimiter(
+	lmt := tollbooth.NewLimiter(
 		rate,
 		&limiter.ExpirableOptions{
 			DefaultExpirationTTL: ttl,
 		},
 	)
-	return tollbooth_gin.LimitHandler(limiter)
+	lmt.SetIPLookup((limiter.IPLookup{
+		Name:           "Cf-Connecting-Ip",
+		IndexFromRight: 0,
+	}))
+	return LimitHandler(lmt)
 }
