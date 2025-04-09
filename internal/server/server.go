@@ -29,6 +29,9 @@ func New(
 
 	router := gin.New()
 
+	// 设置 k3s 负载均衡地址
+	router.SetTrustedProxies([]string{"10.0.0.0/8"})
+
 	router.Use(gin.Recovery())
 	router.Use(gin.Logger())
 
