@@ -3,7 +3,7 @@ module github.com/zzhirong/contextdict
 go 1.23.1
 
 require (
-	github.com/didip/tollbooth/v7 v7.0.2
+	github.com/didip/tollbooth/v8 v8.0.1
 	github.com/didip/tollbooth_gin v0.0.0-20250112173845-11eddec067c4
 	github.com/gin-gonic/gin v1.10.0
 	github.com/ilyakaznacheev/cleanenv v1.5.0
@@ -22,6 +22,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cloudwego/base64x v0.1.5 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
+	github.com/didip/tollbooth/v7 v7.0.2 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.8 // indirect
 	github.com/gin-contrib/sse v1.0.0 // indirect
 	github.com/go-pkgz/expirable-cache/v3 v3.0.0 // indirect
