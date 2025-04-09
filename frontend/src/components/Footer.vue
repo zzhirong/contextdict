@@ -9,10 +9,11 @@
 <style scoped>
 .footer {
   margin-top: 2rem;
-  padding: 1rem 0;
+  padding: 0.5rem;
   display: flex;
   justify-content: center;
   gap: 2rem;
+  width: 100%;
   border-top: 1px solid #eee;
 }
 
