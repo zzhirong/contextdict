@@ -4,7 +4,4 @@ metadata:
   name: {{ .Release.Name }}-config
 data:
   config.yaml: |
-    {{- $baseConfig := .Files.Get "config.yaml" | fromYaml }}
-    {{- $overrideConfig := .Values.appConfigOverrides | default dict }}
-    {{- $mergedConfig := mergeOverwrite (deepCopy $baseConfig) $overrideConfig }}
-    {{- $mergedConfig | toYaml | nindent 8 }}
+    {{- .Values.appConfig | toYaml | nindent 4 }}

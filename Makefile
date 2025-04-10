@@ -8,5 +8,9 @@ contextdict: $(GO_SRCS) front
 front:
 	$(MAKE) -C ./frontend
 
-run: contextdict
+# 根据 charts 中 values.yaml 生成 config.yaml, 方便开发
+config.yaml: ./charts/contextdict/values.yaml
+	helm template contextdict ./charts/contextdict | yq 'select(.data."config.yaml" != null) | .data."config.yaml"' > config.yaml
+
+run: contextdict config.yaml
 	./contextdict
