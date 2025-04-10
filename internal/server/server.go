@@ -56,10 +56,6 @@ func New(
 	router.StaticFS("/assets", http.FS(assetsFS))
 
 	router.GET("/api", apiHandler.Handle)
-	router.GET("/test_keepalive", func(c *gin.Context) {
-		time.Sleep(16 * time.Second)
-		c.String(http.StatusOK, "OK")
-	})
 
 	return &GinServer{
 		router: router,
