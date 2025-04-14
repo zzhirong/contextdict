@@ -31,6 +31,8 @@ spec:
             secretKeyRef:
               name: {{ .Release.Name }}-secrets
               key: ps_password
+        - name: GIN_MODE
+          value: "release"
         volumeMounts:
         - name: config-volume
           mountPath: /etc/contextdict/config.yaml

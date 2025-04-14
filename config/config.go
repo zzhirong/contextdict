@@ -1,7 +1,6 @@
 package config
 
 import (
-	"fmt"
 	"log"
 	"os"
 
@@ -77,6 +76,5 @@ func Load(path string) *Config {
 	}
 
 	log.Println("Configuration loaded.")
-	fmt.Printf("%+v", cfg)
 	return cfg
 }
