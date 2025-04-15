@@ -56,8 +56,8 @@ const { toClipboard } = useClipboard()
 const selectedText = ref('')
 const isLoading = ref(false)
 const translation = ref('')
-const params = new URLSearchParams(window.location.search);
-const q = params.get('text');
+const urlSearchParams = new URLSearchParams(window.location.search);
+const q = urlSearchParams.get('text');
 const inputText = ref(q)
 const renderedTranslation = computed(() => {
   return marked(translation.value)
@@ -156,9 +156,13 @@ async function copyMarkdown() {
     }
 }
 
-// Run translation if query parameter exists
+// 如果有查询参数，则自动执行相应功能
 if (q) {
-  translate()
+  if (urlSearchParams.has('selected')) {
+    selectedText.value = urlSearchParams.get('selected') ?? ''
+  }
+  const role = urlSearchParams.get('role')?? 'translate'
+  callApi({role:role})
 }
 
 </script>
