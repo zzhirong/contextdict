@@ -10,11 +10,11 @@ appConfig:
   MetricsPort: 8086
   MaxURLLen: 3024
   Database:
-    Host: "aws-0-ap-northeast-1.pooler.supabase.com"
-    Port: "5432"
-    User: "postgres.hhcbjadlrkfdvezskqrb"
+    Host: "mysql"
+    Port: "3306"
+    User: "contextdict"
     Password: "" # 从 PS_PASSWORD 环境变量中读取
-    DBName: "postgres"
+    DBName: "contextdict"
     SSLMode: "require"
   AI:
     APIKey: "" # 从 DS_API_KEY 中读取

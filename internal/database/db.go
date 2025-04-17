@@ -7,7 +7,7 @@ import (
 
 	"github.com/zzhirong/contextdict/config"          // Adjust import path if needed
 	"github.com/zzhirong/contextdict/internal/models" // Adjust import path
-	"gorm.io/driver/postgres"
+	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
 
@@ -25,16 +25,15 @@ type GormRepository struct {
 
 // NewRepository creates a new database connection and repository instance.
 func NewRepository(cfg config.DatabaseConfig) (Repository, error) {
-	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
-		cfg.Host,
-		cfg.Port,
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
 		cfg.User,
 		cfg.Password,
+		cfg.Host,
+		cfg.Port,
 		cfg.DBName,
-		cfg.SSLMode,
 	)
 
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
