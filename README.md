@@ -2,7 +2,7 @@
 上下文字典是一款利用 AI 辅助阅读外文文档的在线工具，目前主要用于辅助 MarginNote 4 阅读外文书籍和文档。
 
 #### 使用
-- 在 MarginNote 4 中，依次进入“设置 (Setting)” → “研究 (Research)” → “自定义 URL (Custom URL)”选项，然后填入以下地址：
+- 利用的是 MarginNote 已有的研究功能:在 MarginNote 4 中，依次进入“设置 (Setting)” → “研究 (Research)” → “自定义 URL (Custom URL)”选项，然后填入以下地址：
 ```
 https://contextdict.zzhirong.com/?text={keyword}
 ```

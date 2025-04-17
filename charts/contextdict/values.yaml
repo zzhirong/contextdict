@@ -18,8 +18,8 @@ appConfig:
     SSLMode: "require"
   AI:
     APIKey: "" # 从 DS_API_KEY 中读取
-    BaseURL: "https://ark.cn-beijing.volces.com/api/v3"
-    Model: "ep-20250314123811-lt8tx"
+    BaseURL: "https://generativelanguage.googleapis.com/v1beta/openai/"
+    Model: "gemini-2.0-flash-exp"
   RateLimit:
     Enabled: true
     Rate: 1 # requests/second
