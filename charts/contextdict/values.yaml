@@ -3,14 +3,14 @@ image:
   tag: latest
   pullPolicy: IfNotPresent
 secrets:
-  dsApiKey: ""  # 将通过 --set-string secrets.dsApiKey=xxx 注入
-  dbPassword: "" # 将通过 --set-string secrets.dbPassword=xxx 注入
-  sentryDsn: "" # 将通过 --set-string secrets.sentryDsn=xxx 注入
+  ds_api_key: ""  # 将通过 --set-string secrets.dsApiKey=xxx 注入
+  ps_password: "" # 将通过 --set-string secrets.dbPassword=xxx 注入
+  sentry_dsn: "" # 将通过 --set-string secrets.sentryDsn=xxx 注入
 appConfig:
   ServerPort: 8085
   MetricsPort: 8086
   MaxURLLen: 3024
-  sentryDsn: ""
+  SentryDsn: ""
   Database:
     Host: "mysql"
     Port: "3306"
