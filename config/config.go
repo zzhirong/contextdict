@@ -15,6 +15,7 @@ type Config struct {
 	AI          AIConfig          `yaml:"AI"`
 	RateLimit   RateLimitConfig   `yaml:"RateLimit"`
 	Prompts     map[string]string `yaml:"Prompts"`
+	SentryDsn   string `yaml:"SentryDsn" env:"SENTRY_DSN" env-required:"true"`
 }
 
 type DatabaseConfig struct {

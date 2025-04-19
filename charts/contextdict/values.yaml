@@ -5,10 +5,12 @@ image:
 secrets:
   dsApiKey: ""  # 将通过 --set-string secrets.dsApiKey=xxx 注入
   dbPassword: "" # 将通过 --set-string secrets.dbPassword=xxx 注入
+  sentryDsn: "" # 将通过 --set-string secrets.sentryDsn=xxx 注入
 appConfig:
   ServerPort: 8085
   MetricsPort: 8086
   MaxURLLen: 3024
+  sentryDsn: ""
   Database:
     Host: "mysql"
     Port: "3306"
