@@ -9,7 +9,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/zzhirong/contextdict/config"
+	sentry "github.com/getsentry/sentry-go"
 	"github.com/zzhirong/contextdict/internal/handlers"
+	sentrygin "github.com/getsentry/sentry-go/gin"
 	mw "github.com/zzhirong/contextdict/internal/middleware"
 )
 
@@ -25,12 +27,23 @@ func New(
 	apiHandler *handlers.APIHandler,
 	rlcfg *config.RateLimitConfig,
 	contentFS fs.FS, // Pass embedded FS
+	sentryDsn string,
 ) *GinServer {
 
 	router := gin.New()
 
+	if err := sentry.Init(sentry.ClientOptions{
+		Dsn: sentryDsn,
+		// Adds request headers and IP for users,
+		// visit: https://docs.sentry.io/platforms/go/data-management/data-collected/ for more info
+		SendDefaultPII: true,
+	}); err != nil {
+		log.Printf("Sentry initialization failed: %v\n", err)
+	}
+
 	router.Use(gin.Recovery())
 	router.Use(gin.Logger())
+	router.Use(sentrygin.New(sentrygin.Options{}))
 
 	if rlcfg.Enabled {
 		log.Printf("IP Rate Limiting enabled (Rate: %.2f/s, ExpireDays: %d)", rlcfg.Rate, rlcfg.ExpireDays)

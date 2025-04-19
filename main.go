@@ -56,7 +56,7 @@ func main() {
 		log.Fatalf("Failed to create sub FS for frontend/dist: %v", err)
 	}
 
-	ginServer := server.New(":" + cfg.ServerPort, cfg.MaxURLLen, apiHandler, &cfg.RateLimit, contentFS)
+	ginServer := server.New(":" + cfg.ServerPort, cfg.MaxURLLen, apiHandler, &cfg.RateLimit, contentFS, cfg.SentryDsn)
 	servers["application"] = ginServer.Start()
 
 	GracefulShutdown(10*time.Second, servers) // 10-second shutdown timeout

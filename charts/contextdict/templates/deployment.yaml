@@ -31,6 +31,11 @@ spec:
             secretKeyRef:
               name: {{ .Release.Name }}-secrets
               key: ps_password
+        - name: SENTRY_DSN
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Release.Name }}-secrets
+              key: sentryDsn
         - name: GIN_MODE
           value: "release"
         volumeMounts:
