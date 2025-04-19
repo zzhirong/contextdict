@@ -57,6 +57,6 @@ jobs:
         run: |
           helm upgrade --install contextdict ./charts/contextdict \
             --set-string image.tag='${{ github.ref_name }}' \
-            --set-string secrets.dsApiKey='${{ secrets.DS_API_KEY }}' \
-            --set-string secrets.dbPassword='${{ secrets.PS_PASSWORD }}' \
-            --set-string secrets.sentryDsn='${{ secrets.SENTRY_DSN }}'
+            --set-string secrets.ds_api_key='${{ secrets.DS_API_KEY }}' \
+            --set-string secrets.ps_password='${{ secrets.PS_PASSWORD }}' \
+            --set-string secrets.sentry_dsn='${{ secrets.SENTRY_DSN }}'
