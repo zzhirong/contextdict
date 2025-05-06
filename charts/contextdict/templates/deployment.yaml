@@ -8,11 +8,11 @@ spec:
   replicas: {{ .Values.replicaCount | default 2 }}
   selector:
     matchLabels:
-      app: {{ .Release.Name }}
+      name: {{ .Release.Name }}
   template:
     metadata:
       labels:
-        app: {{ .Release.Name }}
+        name: {{ .Release.Name }}
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
@@ -56,7 +56,7 @@ metadata:
         prometheus.io/port: "8086"
 spec:
   selector:
-    app: {{ .Release.Name }}
+    name: {{ .Release.Name }}
   ports:
     - protocol: TCP
       name: contextdict-port
