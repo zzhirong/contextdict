@@ -46,6 +46,11 @@ func New(
 	if err != nil {
 		log.Fatal(err)
 	}
+	// Add OpenTelemetry global error handler to capture SDK errors
+	otel.SetErrorHandler(otel.ErrorHandlerFunc(func(err error) {
+		log.Printf("OpenTelemetry Error: %v", err)
+	}))
+
 	defer func() {
 		if err := tp.Shutdown(context.Background()); err != nil {
 			log.Printf("Error shutting down tracer provider: %v", err)
