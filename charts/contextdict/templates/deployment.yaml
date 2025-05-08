@@ -38,6 +38,8 @@ spec:
               key: sentry_dsn
         - name: GIN_MODE
           value: "release"
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT 
+          value: "http://alloy:12345"
         volumeMounts:
         - name: config-volume
           mountPath: /etc/contextdict/config.yaml

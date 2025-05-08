@@ -13,6 +13,13 @@ import (
 	"github.com/zzhirong/contextdict/internal/handlers"
 	sentrygin "github.com/getsentry/sentry-go/gin"
 	mw "github.com/zzhirong/contextdict/internal/middleware"
+	"go.opentelemetry.io/otel/propagation"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
+	"context"
 )
 
 // GinServer holds the Gin engine and configuration.
@@ -30,6 +37,16 @@ func New(
 	sentryDsn string,
 ) *GinServer {
 
+	tp, err := initTracer()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer func() {
+		if err := tp.Shutdown(context.Background()); err != nil {
+			log.Printf("Error shutting down tracer provider: %v", err)
+		}
+	}()
+
 	router := gin.New()
 
 	if err := sentry.Init(sentry.ClientOptions{
@@ -41,6 +58,7 @@ func New(
 		log.Printf("Sentry initialization failed: %v\n", err)
 	}
 
+	router.Use(otelgin.Middleware("my-server"))
 	router.Use(gin.Recovery())
 	router.Use(gin.Logger())
 	router.Use(sentrygin.New(sentrygin.Options{}))
@@ -90,4 +108,19 @@ func (s *GinServer) Start() *http.Server {
 		}
 	}()
 	return srv
+}
+
+func initTracer() (*sdktrace.TracerProvider, error) {
+	// exporter, err := stdout.New(stdout.WithPrettyPrint())
+	exporter, err := otlptrace.New(context.TODO(), otlptracehttp.NewClient())
+	if err != nil {
+		return nil, err
+	}
+	tp := sdktrace.NewTracerProvider(
+		sdktrace.WithSampler(sdktrace.AlwaysSample()),
+		sdktrace.WithBatcher(exporter),
+	)
+	otel.SetTracerProvider(tp)
+	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
+	return tp, nil
 }
