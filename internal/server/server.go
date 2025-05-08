@@ -7,20 +7,25 @@ import (
 	"net/http"
 	"time"
 
+	"context"
+
+	sentry "github.com/getsentry/sentry-go"
+	sentrygin "github.com/getsentry/sentry-go/gin"
 	"github.com/gin-gonic/gin"
 	"github.com/zzhirong/contextdict/config"
-	sentry "github.com/getsentry/sentry-go"
 	"github.com/zzhirong/contextdict/internal/handlers"
-	sentrygin "github.com/getsentry/sentry-go/gin"
 	mw "github.com/zzhirong/contextdict/internal/middleware"
-	"go.opentelemetry.io/otel/propagation"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
-	"context"
+	"go.opentelemetry.io/otel/propagation"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	oteltrace "go.opentelemetry.io/otel/trace"
 )
+
+var tracer = otel.Tracer("gin-server")
 
 // GinServer holds the Gin engine and configuration.
 type GinServer struct {
@@ -59,6 +64,7 @@ func New(
 	}
 
 	router.Use(otelgin.Middleware("my-server"))
+	router.Use(traceRole)
 	router.Use(gin.Recovery())
 	router.Use(gin.Logger())
 	router.Use(sentrygin.New(sentrygin.Options{}))
@@ -89,6 +95,17 @@ func New(
 		router: router,
 		addr:   addr,
 	}
+}
+
+func traceRole(c *gin.Context) {
+	_, span := tracer.Start(c.Request.Context(),
+		"getUser",
+		oteltrace.WithAttributes(
+			attribute.String("id", c.Query("role")),
+		),
+	)
+	defer span.End()
+	c.Next()
 }
 
 // Start runs the Gin HTTP server.
