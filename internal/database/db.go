@@ -7,6 +7,8 @@ import (
 
 	"github.com/zzhirong/contextdict/config"          // Adjust import path if needed
 	"github.com/zzhirong/contextdict/internal/models" // Adjust import path
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -56,6 +58,16 @@ func NewRepository(cfg config.DatabaseConfig) (Repository, error) {
 
 // FindTranslation looks for an existing translation in the cache.
 func (r *GormRepository) FindTranslation(ctx context.Context, text, selected string) (*models.TranslationResponse, error) {
+	tr := otel.Tracer("database")
+	ctx, span := tr.Start(ctx, "FindTranslation")
+	defer span.End()
+
+	span.SetAttributes(
+		attribute.String("db.system", "mysql"),
+		attribute.String("db.statement.type", "SELECT"),
+		attribute.String("translation.text", text),
+		attribute.String("translation.selected", selected),
+	)
 	var result models.TranslationResponse
 	result.Text = text
 	result.Selected = selected
@@ -64,6 +76,7 @@ func (r *GormRepository) FindTranslation(ctx context.Context, text, selected str
 		First(&result).Error
 
 	if err != nil {
+		span.RecordError(err)
 		if err == gorm.ErrRecordNotFound {
 			return nil, nil // Indicate cache miss clearly
 		}
@@ -75,6 +88,16 @@ func (r *GormRepository) FindTranslation(ctx context.Context, text, selected str
 
 // CreateTranslation saves a new translation record to the cache.
 func (r *GormRepository) CreateTranslation(ctx context.Context, record *models.TranslationResponse) error {
+	tr := otel.Tracer("database")
+	ctx, span := tr.Start(ctx, "CreateTranslation")
+	defer span.End()
+
+	span.SetAttributes(
+		attribute.String("db.system", "mysql"),
+		attribute.String("db.statement.type", "INSERT"),
+		attribute.String("translation.text", record.Text),
+		attribute.String("translation.selected", record.Selected),
+	)
 	// Use .WithContext for potential cancellation/timeouts
 	// Ensure we don't try to insert a record with an existing primary key if it came from FindTranslation
 	if record.ID != 0 {
@@ -83,6 +106,7 @@ func (r *GormRepository) CreateTranslation(ctx context.Context, record *models.T
 
 	err := r.db.WithContext(ctx).Create(record).Error
 	if err != nil {
+		span.RecordError(err)
 		return fmt.Errorf("error creating translation in DB: %w", err)
 	}
 	return nil

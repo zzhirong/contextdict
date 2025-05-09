@@ -17,20 +17,19 @@ import (
 	mw "github.com/zzhirong/contextdict/internal/middleware"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/propagation"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	oteltrace "go.opentelemetry.io/otel/trace"
 )
 
 var tracer = otel.Tracer("gin-server")
 
 // GinServer holds the Gin engine and configuration.
 type GinServer struct {
-	router *gin.Engine
-	addr   string
+	router     *gin.Engine
+	addr       string
+	onShutdown func()
 }
 
 func New(
@@ -51,12 +50,6 @@ func New(
 		log.Printf("OpenTelemetry Error: %v", err)
 	}))
 
-	defer func() {
-		if err := tp.Shutdown(context.Background()); err != nil {
-			log.Printf("Error shutting down tracer provider: %v", err)
-		}
-	}()
-
 	router := gin.New()
 
 	if err := sentry.Init(sentry.ClientOptions{
@@ -68,7 +61,7 @@ func New(
 		log.Printf("Sentry initialization failed: %v\n", err)
 	}
 
-	router.Use(otelgin.Middleware("my-server"))
+	router.Use(otelgin.Middleware("contextdict"))
 	router.Use(traceRole)
 	router.Use(gin.Recovery())
 	router.Use(gin.Logger())
@@ -96,20 +89,29 @@ func New(
 
 	router.GET("/api", apiHandler.Handle)
 
+	defer func() {
+	}()
+
 	return &GinServer{
 		router: router,
 		addr:   addr,
+		onShutdown: func() {
+			if err := tp.Shutdown(context.Background()); err != nil {
+				log.Printf("Error shutting down tracer provider: %v", err)
+			}
+		},
 	}
 }
 
 func traceRole(c *gin.Context) {
-	_, span := tracer.Start(c.Request.Context(),
-		"getUser",
-		oteltrace.WithAttributes(
-			attribute.String("id", c.Query("role")),
-		),
-	)
-	defer span.End()
+	role := c.Query("role")
+	if role != "" {
+		_, span := tracer.Start(c.Request.Context(),
+			role,
+		)
+		defer span.End()
+
+	}
 	c.Next()
 }
 
@@ -123,6 +125,7 @@ func (s *GinServer) Start() *http.Server {
 		IdleTimeout:  120 * time.Second,
 	}
 
+	srv.RegisterOnShutdown(s.onShutdown)
 	go func() {
 		log.Printf("Application server starting on %s", s.addr)
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {

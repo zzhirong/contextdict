@@ -7,6 +7,9 @@ import (
 
 	"github.com/sashabaranov/go-openai"
 	"github.com/zzhirong/contextdict/config"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 )
 
 type Client interface {
@@ -32,6 +35,11 @@ func NewClient(cfg config.AIConfig) Client {
 }
 
 func (dsc *DeepSeekClient) Generate(ctx context.Context, prompt string, texts ...string) (string, error) {
+	tracer := otel.Tracer("github.com/zzhirong/contextdict/internal/ai")
+	ctx, span := tracer.Start(ctx, "ai.Generate")
+	defer span.End()
+
+	span.SetAttributes(attribute.String("ai.model", dsc.cfg.Model))
 	messages := make([]openai.ChatCompletionMessage, len(texts)+1)
 	messages[0] = openai.ChatCompletionMessage{
 		Role:    openai.ChatMessageRoleSystem,
@@ -51,13 +59,18 @@ func (dsc *DeepSeekClient) Generate(ctx context.Context, prompt string, texts ..
 
 	resp, err := dsc.client.CreateChatCompletion(ctx, req)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		log.Printf("AI ChatCompletion error: %v\n", err)
 		return "", fmt.Errorf("AI request failed: %w", err)
 	}
 
 	if len(resp.Choices) == 0 || resp.Choices[0].Message.Content == "" {
+		err := fmt.Errorf("AI returned empty response")
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		log.Printf("AI returned empty response or choices. Response: %+v", resp)
-		return "", fmt.Errorf("AI returned empty response")
+		return "", err
 	}
 
 	return resp.Choices[0].Message.Content, nil
